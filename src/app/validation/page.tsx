@@ -1,58 +1,120 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useAppStore } from "@/store/useAppStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Validation() {
+  const router = useRouter();
+  const {
+    folio,
+    validationStatus,
+    extractionProgress,
+    extractedData,
+    setValidationProgress,
+    setValidationStatus,
+    setExtractedData,
+  } = useAppStore();
+
+  const [localData, setLocalData] = useState(extractedData);
+
+  useEffect(() => {
+    // Start simulation on mount
+    setValidationStatus("extracting");
+    setValidationProgress(0);
+
+    const interval = setInterval(() => {
+      const prev = useAppStore.getState().extractionProgress;
+      if (prev >= 100) {
+        clearInterval(interval);
+        // AI Simulation result
+        const success = Math.random() > 0.2; // 80% success
+        if (success) {
+          setValidationStatus("approved");
+          setExtractedData({
+            nombreCompleto: "ALEJANDRO RODRÍGUEZ GARCÍA",
+            rfc: "ROGA880512HDF",
+            direccion:
+              "CALLE INSURGENTES SUR 1602, COLONIA CRÉDITO CONSTRUCTOR, CDMX, 03940",
+            confidence: 99.8,
+          });
+          setLocalData({
+            nombreCompleto: "ALEJANDRO RODRÍGUEZ GARCÍA",
+            rfc: "ROGA880512HDF",
+            direccion:
+              "CALLE INSURGENTES SUR 1602, COLONIA CRÉDITO CONSTRUCTOR, CDMX, 03940",
+            confidence: 99.8,
+          });
+          toast.success("Extracción completada con alta confianza");
+        } else {
+          setValidationStatus("manual_review");
+          setExtractedData({
+            nombreCompleto: "ALEJANDRO RODRÍGUEZ", // Incomplete
+            rfc: "",
+            direccion: "CALLE INSURGENTES SUR 1602",
+            confidence: 45.2,
+          });
+          setLocalData({
+            nombreCompleto: "ALEJANDRO RODRÍGUEZ",
+            rfc: "",
+            direccion: "CALLE INSURGENTES SUR 1602",
+            confidence: 45.2,
+          });
+          toast.error(
+            "Confianza baja en extracción. Se requiere revisión manual",
+          );
+        }
+      } else {
+        setValidationProgress(prev + Math.floor(Math.random() * 15) + 5); // Random jump 5-20%
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualSave = () => {
+    setExtractedData(localData);
+    setValidationStatus("approved");
+    toast.success("Datos actualizados manualmente");
+  };
+
+  const handleContinue = () => {
+    if (validationStatus !== "approved") {
+      toast.error("Complete la validación antes de continuar");
+      return;
+    }
+    router.push("/tracking");
+  };
+
+  const isExtracting = validationStatus === "extracting";
+  const needsReview = validationStatus === "manual_review";
+
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
       <div className="layout-container flex h-full grow flex-col">
-        {/* Top Navigation Bar */}
+        {/* Top Navigation */}
         <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 lg:px-10 py-3">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-4 text-primary">
               <div className="size-8 flex items-center justify-center bg-primary/10 rounded-lg">
                 <span className="material-symbols-outlined">analytics</span>
               </div>
-              <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">
+              <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight">
                 GMX Portal
               </h2>
             </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <a
-                className="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
-                href="/"
-              >
-                Escritorio
-              </a>
-              <a
-                className="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
-                href="/"
-              >
-                Documentos
-              </a>
-              <a
-                className="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors"
-                href="/"
-              >
-                Configuración
-              </a>
-            </nav>
           </div>
           <div className="flex flex-1 justify-end gap-4 items-center">
-            <label className="hidden sm:flex flex-col min-w-40 h-10 max-w-64">
-              <div className="flex w-full flex-1 items-stretch rounded-xl h-full">
-                <div className="text-slate-400 flex border-none bg-slate-100 dark:bg-slate-800 items-center justify-center pl-4 rounded-l-xl">
-                  <span className="material-symbols-outlined text-[20px]">
-                    search
-                  </span>
-                </div>
-                <input
-                  id="nombre_completo"
-                  className="form-input flex w-full min-w-0 flex-1 border-none bg-slate-100 dark:bg-slate-800 focus:ring-0 h-full placeholder:text-slate-500 px-4 rounded-r-xl text-sm font-normal"
-                  placeholder="Buscar expediente..."
-                  value=""
-                  readOnly
-                />
-              </div>
-            </label>
+            <div className="text-sm font-bold text-slate-500 mr-4">
+              Folio: {folio || "N/A"}
+            </div>
             <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/10 overflow-hidden relative">
               <Image
                 className="object-cover"
@@ -66,17 +128,7 @@ export default function Validation() {
         </header>
 
         <main className="flex flex-1 flex-col">
-          {/* Breadcrumbs & Header */}
           <div className="px-6 lg:px-10 py-4 flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 uppercase tracking-wider">
-              <a className="hover:text-primary" href="/">
-                Inicio
-              </a>
-              <span className="material-symbols-outlined text-[14px]">
-                chevron_right
-              </span>
-              <span className="text-primary">Extracción de IA</span>
-            </div>
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">
@@ -87,20 +139,34 @@ export default function Validation() {
                 </p>
               </div>
               <div className="hidden sm:block">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-success/10 text-emerald-success text-xs font-bold">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-success opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-success"></span>
-                  </span>
-                  PROCESANDO EN TIEMPO REAL
-                </span>
+                {isExtracting && (
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/10 text-emerald-600 border-none font-bold py-1 px-3"
+                  >
+                    <span className="relative flex h-2 w-2 mr-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    PROCESANDO EN TIEMPO REAL
+                  </Badge>
+                )}
+                {validationStatus === "approved" && (
+                  <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1 px-3">
+                    APROBADO
+                  </Badge>
+                )}
+                {needsReview && (
+                  <Badge variant="destructive" className="font-bold py-1 px-3">
+                    REVISIÓN MANUAL
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Main Content Split Screen */}
           <div className="flex flex-1 flex-col lg:flex-row gap-6 px-6 lg:px-10 pb-10 h-full min-h-0">
-            {/* Left: Document Previewer */}
+            {/* Document Previewer */}
             <div className="flex-1 bg-slate-200 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 flex flex-col shadow-inner">
               <div className="bg-white dark:bg-slate-900 px-4 py-2 border-b border-slate-300 dark:border-slate-700 flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-500 flex items-center gap-2">
@@ -109,34 +175,23 @@ export default function Validation() {
                   </span>
                   VISTA PREVIA DEL DOCUMENTO
                 </span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      zoom_in
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      rotate_right
-                    </span>
-                  </button>
-                </div>
               </div>
 
               <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
-                {/* Simulated Blurred ID Card */}
-                <div className="relative w-full max-w-md aspect-[1.586/1] bg-slate-100 dark:bg-slate-900 rounded-lg shadow-2xl border border-white/20 overflow-hidden blur-document">
+                <motion.div
+                  initial={{ filter: "blur(10px)", opacity: 0.5 }}
+                  animate={{
+                    filter: isExtracting ? "blur(5px)" : "blur(0px)",
+                    opacity: 1,
+                  }}
+                  transition={{ duration: 1 }}
+                  className="relative w-full max-w-md aspect-[1.586/1] bg-slate-100 dark:bg-slate-900 rounded-lg shadow-2xl border border-white/20 overflow-hidden"
+                >
                   <div className="absolute top-0 left-0 w-full h-12 bg-primary/80 flex items-center px-4 text-white font-bold text-sm tracking-widest">
                     INSTITUTO NACIONAL ELECTORAL
                   </div>
                   <div className="p-6 pt-16 flex gap-4">
-                    <div className="w-1/3 aspect-[3/4] bg-slate-300 dark:bg-slate-700 rounded-md"></div>
+                    <div className="w-1/3 aspect-[3/4] bg-slate-300 dark:bg-slate-700 rounded-md bg-cover bg-center" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAysPLmFCFspedMFO9-TkVN3KyyX-aeZ4jCBcyznEm8x9VV_sjzXJmLNuTAB3smFMnqZTHwkh7LqMDWQJl9KpfPBv748kzLthcs0sXZ1Fx3AhBZbJ6OQxjnnLd9_4ptagK3MPgOnSnZZPAhaolfocYCQOyhBwDShKIJ0Y1tfrL_ZR89LLYdIthJKtLA7NCLV9j3PYzamtliocdTa2hNKNxFqY8tv_5YyItiWQSsnFfURKaXedYaSZ__jxaaxz-va61ieloWfZgDwlHg')" }}></div>
                     <div className="flex-1 flex flex-col gap-2">
                       <div className="h-4 bg-slate-300 dark:bg-slate-700 w-full rounded"></div>
                       <div className="h-4 bg-slate-300 dark:bg-slate-700 w-5/6 rounded"></div>
@@ -144,187 +199,176 @@ export default function Validation() {
                       <div className="mt-4 h-8 bg-slate-300 dark:bg-slate-700 w-full rounded border-2 border-dashed border-slate-400"></div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
-                {/* AI Scanning Overlay */}
-                <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-                  <div className="w-full max-w-lg h-[2px] bg-primary/40 shadow-[0_0_15px_rgba(0,0,128,0.5)] animate-scan"></div>
-                </div>
+                {isExtracting && (
+                  <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                    <motion.div
+                      animate={{ top: ["0%", "100%", "0%"] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 2,
+                        ease: "linear",
+                      }}
+                      className="absolute w-full max-w-lg h-[2px] bg-primary shadow-[0_0_15px_rgba(var(--primary),0.8)] z-10"
+                    ></motion.div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Right: AI Extraction Form */}
+            {/* AI Extraction Form */}
             <div className="w-full lg:w-[450px] flex flex-col gap-6">
-              {/* Extraction Status Card */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">
                     Estado de la Extracción
                   </h3>
-                  <span className="text-primary font-bold text-lg">82%</span>
+                  <span className="text-primary font-bold text-lg">
+                    {extractionProgress}%
+                  </span>
                 </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 mb-4 overflow-hidden">
-                  <div
-                    className="bg-primary h-full rounded-full transition-all duration-1000"
-                    style={{ width: "82%" }}
-                  ></div>
-                </div>
+                <Progress value={extractionProgress} className="h-2 mb-4" />
                 <div className="flex items-center gap-3">
                   <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-primary text-[18px]">
-                      sync
+                    <span
+                      className={`material-symbols-outlined text-primary text-[18px] ${isExtracting ? "animate-spin" : ""
+                        }`}
+                    >
+                      {isExtracting ? "sync" : "task_alt"}
                     </span>
                   </div>
                   <div className="flex-1">
                     <p className="text-xs font-semibold text-slate-900 dark:text-white leading-none">
-                      Extrayendo datos...
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">
-                      Analizando campos de seguridad y firma
+                      {isExtracting
+                        ? "Extrayendo datos..."
+                        : "Extracción finalizada"}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Form Fields */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5">
-                {/* Field: Nombre Completo */}
                 <div className="relative group">
-                  <label
-                    htmlFor="nombre_completo"
-                    className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block"
-                  >
+                  <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block">
                     Nombre Completo
                   </label>
-                  <div className="relative flex items-center">
-                    <input
-                      id="nombre_completo"
-                      className="w-full bg-emerald-success/5 border-emerald-success/30 dark:border-emerald-success/20 rounded-lg py-2.5 px-3 text-slate-900 dark:text-white font-medium focus:ring-0"
-                      readOnly
-                      type="text"
-                      value="ALEJANDRO RODRÍGUEZ GARCÍA"
-                    />
-                    <div className="absolute right-3 text-emerald-success">
-                      <span className="material-symbols-outlined text-[20px]">
-                        check_circle
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-emerald-success mt-1 flex items-center gap-1 font-medium">
-                    <span className="material-symbols-outlined text-[12px]">
-                      verified
-                    </span>
-                    Confianza: 99.8%
-                  </p>
+                  <Input
+                    readOnly={!needsReview}
+                    value={localData.nombreCompleto}
+                    onChange={(e) =>
+                      setLocalData({ ...localData, nombreCompleto: e.target.value })
+                    }
+                    className={`${!needsReview && !isExtracting
+                      ? "bg-emerald-500/5 border-emerald-500/30"
+                      : ""
+                      }`}
+                  />
                 </div>
 
-                {/* Field: RFC */}
                 <div className="relative">
-                  <label
-                    htmlFor="nombre_completo"
-                    className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block"
-                  >
+                  <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block">
                     RFC (Cédula Fiscal)
                   </label>
-                  <div className="relative flex items-center">
-                    <input
-                      id="nombre_completo"
-                      className="w-full bg-emerald-success/5 border-emerald-success/30 dark:border-emerald-success/20 rounded-lg py-2.5 px-3 text-slate-900 dark:text-white font-medium focus:ring-0"
-                      readOnly
-                      type="text"
-                      value="ROGA880512HDF"
-                    />
-                    <div className="absolute right-3 text-emerald-success">
-                      <span className="material-symbols-outlined text-[20px]">
-                        check_circle
-                      </span>
-                    </div>
-                  </div>
+                  <Input
+                    readOnly={!needsReview}
+                    value={localData.rfc}
+                    onChange={(e) =>
+                      setLocalData({ ...localData, rfc: e.target.value })
+                    }
+                    className={`${!needsReview && !isExtracting
+                      ? "bg-emerald-500/5 border-emerald-500/30"
+                      : ""
+                      }`}
+                  />
                 </div>
 
-                {/* Field: Dirección */}
                 <div className="relative">
-                  <label
-                    htmlFor="nombre_completo"
-                    className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block"
-                  >
+                  <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block">
                     Dirección
                   </label>
-                  <div className="relative flex items-center">
-                    <textarea
-                      className="w-full bg-primary/5 border-primary/20 rounded-lg py-2.5 px-3 text-slate-900 dark:text-white font-medium focus:ring-0 resize-none"
-                      readOnly
-                      rows={3}
-                      value="CALLE INSURGENTES SUR 1602, COLONIA CRÉDITO CONSTRUCTOR, CDMX, 03940"
-                    ></textarea>
-                    <div className="absolute right-3 top-3 text-primary animate-pulse">
-                      <span className="material-symbols-outlined text-[20px]">
-                        hourglass_top
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-primary mt-1 font-medium italic">
-                    Refinando extracción geográfica...
-                  </p>
+                  <Input
+                    readOnly={!needsReview}
+                    value={localData.direccion}
+                    onChange={(e) =>
+                      setLocalData({ ...localData, direccion: e.target.value })
+                    }
+                    className={`${!needsReview && !isExtracting
+                      ? "bg-emerald-500/5 border-emerald-500/30"
+                      : ""
+                      }`}
+                  />
                 </div>
 
-                {/* Actions */}
                 <div className="pt-4 flex flex-col gap-3">
-                  <button
-                    type="button"
-                    className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                  >
-                    Validar y Continuar
-                    <span className="material-symbols-outlined text-[18px]">
-                      arrow_forward
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-semibold py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-sm"
-                  >
-                    Corregir manualmente
-                  </button>
+                  <AnimatePresence mode="wait">
+                    {needsReview ? (
+                      <motion.div
+                        key="manual_save"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                      >
+                        <Button
+                          onClick={handleManualSave}
+                          className="w-full bg-slate-900 text-white font-bold py-6 rounded-lg shadow-lg flex items-center justify-center gap-2"
+                        >
+                          Guardar Correcciones
+                          <span className="material-symbols-outlined text-[18px]">
+                            save
+                          </span>
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="continue"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                      >
+                        <Button
+                          onClick={handleContinue}
+                          disabled={isExtracting}
+                          className={`w-full font-bold py-6 rounded-lg shadow-lg flex items-center justify-center gap-2 ${validationStatus === "approved"
+                            ? "bg-primary text-white hover:bg-primary/90"
+                            : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                            }`}
+                        >
+                          Validar y Continuar
+                          <span className="material-symbols-outlined text-[18px]">
+                            arrow_forward
+                          </span>
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
-              {/* AI Assistance Tooltip */}
-              <div className="bg-primary/90 text-white p-4 rounded-xl flex gap-3 items-start">
-                <span className="material-symbols-outlined text-[24px]">
-                  lightbulb
-                </span>
-                <div>
-                  <p className="text-xs font-bold mb-1">Tip de Inteligencia</p>
-                  <p className="text-[11px] opacity-90 leading-relaxed">
-                    Hemos detectado que el RFC coincide con nuestra base de
-                    datos de clientes existentes. Se han precargado datos
-                    adicionales.
-                  </p>
-                </div>
-              </div>
+              {!isExtracting && validationStatus === "approved" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-primary/90 text-white p-4 rounded-xl flex gap-3 items-start"
+                >
+                  <span className="material-symbols-outlined text-[24px]">
+                    lightbulb
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold mb-1">
+                      Tip de Inteligencia
+                    </p>
+                    <p className="text-[11px] opacity-90 leading-relaxed">
+                      Hemos detectado que el RFC coincide con nuestra base de
+                      datos de clientes existentes. Se han precargado datos
+                      adicionales.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </main>
-
-        {/* Bottom Floating Status Bar (Mobile Only) */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 z-50">
-          <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">
-                Extracción
-              </span>
-              <span className="text-sm font-bold text-primary italic">
-                82% Completado
-              </span>
-            </div>
-            <button
-              type="button"
-              className="bg-primary px-6 py-2 rounded-lg text-white font-bold text-sm"
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

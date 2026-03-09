@@ -1,6 +1,44 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useAppStore, PersonaType } from "@/store/useAppStore";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { motion } from "motion/react";
 
 export default function Registration() {
+  const router = useRouter();
+  const { setPersonaType, personaType, setDocumentsUploaded, generateFolio } =
+    useAppStore();
+
+  const [uploadedDocs, setUploadedDocs] = useState<number>(0);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      if (uploadedDocs < 3) {
+        setUploadedDocs((prev) => prev + 1);
+        toast.success("Documento cargado correctamente");
+      }
+    }
+  };
+
+  const handleContinue = () => {
+    if (!personaType) {
+      toast.error("Por favor seleccione un tipo de persona");
+      return;
+    }
+    if (uploadedDocs < 3) {
+      toast.error("Debe subir los 3 documentos requeridos");
+      return;
+    }
+
+    setDocumentsUploaded(uploadedDocs);
+    generateFolio();
+    router.push("/validation");
+  };
+
   return (
     <div className="relative flex flex-col w-full">
       {/* Top Navigation */}
@@ -50,7 +88,6 @@ export default function Registration() {
       </header>
 
       <main className="max-w-5xl mx-auto w-full px-6 py-10 space-y-12">
-        {/* Selection Section */}
         <section>
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
@@ -62,86 +99,61 @@ export default function Registration() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Option 1 */}
-            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
-              <input
-                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
-                name="persona_type"
-                type="radio"
-              />
-              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">
-                  person
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Persona Física Nacional
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                Ciudadanos mexicanos con residencia en el país.
-              </p>
-            </label>
-            {/* Option 2 */}
-            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
-              <input
-                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
-                name="persona_type"
-                type="radio"
-              />
-              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">
-                  public
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Persona Física Extranjera
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                Individuos extranjeros con residencia fuera de México.
-              </p>
-            </label>
-            {/* Option 3 */}
-            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
-              <input
-                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
-                name="persona_type"
-                type="radio"
-              />
-              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">
-                  corporate_fare
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Persona Moral Nacional
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                Empresas constituidas bajo leyes mexicanas.
-              </p>
-            </label>
-            {/* Option 4 */}
-            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
-              <input
-                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
-                name="persona_type"
-                type="radio"
-              />
-              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">
-                  business_center
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Persona Moral Extranjera
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">
-                Empresas e instituciones constituidas en el extranjero.
-              </p>
-            </label>
+            {[
+              {
+                id: "fisica_nacional",
+                icon: "person",
+                title: "Persona Física Nacional",
+                desc: "Ciudadanos mexicanos con residencia en el país.",
+              },
+              {
+                id: "fisica_extranjera",
+                icon: "public",
+                title: "Persona Física Extranjera",
+                desc: "Individuos extranjeros con residencia fuera de México.",
+              },
+              {
+                id: "moral_nacional",
+                icon: "corporate_fare",
+                title: "Persona Moral Nacional",
+                desc: "Empresas constituidas bajo leyes mexicanas.",
+              },
+              {
+                id: "moral_extranjera",
+                icon: "business_center",
+                title: "Persona Moral Extranjera",
+                desc: "Empresas e instituciones constituidas en el extranjero.",
+              },
+            ].map((option) => (
+              <label
+                key={option.id}
+                className={`group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 rounded-xl shadow-sm transition-all cursor-pointer ${personaType === option.id
+                    ? "border-primary bg-primary/5"
+                    : "border-transparent hover:border-primary/40 hover:shadow-md"
+                  }`}
+                onClick={() => setPersonaType(option.id as PersonaType)}
+              >
+                <input
+                  className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
+                  name="persona_type"
+                  type="radio"
+                  checked={personaType === option.id}
+                  readOnly
+                />
+                <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-3xl">
+                    {option.icon}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {option.title}
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">{option.desc}</p>
+              </label>
+            ))}
           </div>
         </section>
 
-        {/* Documentation Section */}
         <section className="space-y-6">
           <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
             <div>
@@ -153,121 +165,102 @@ export default function Registration() {
               </p>
             </div>
             <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              0 de 3 Subidos
+              {uploadedDocs} de 3 Subidos
             </span>
           </div>
 
           <div className="grid grid-cols-1 gap-6">
-            {/* Upload Item 1 */}
-            <div className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all">
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">
-                    badge
-                  </span>
-                  <h4 className="font-bold text-slate-900 dark:text-white">
-                    Identificación Oficial
-                  </h4>
-                </div>
-                <p className="text-sm text-slate-500">
-                  INE, Pasaporte o Cédula Profesional vigente.
-                </p>
-              </div>
-              <div className="w-full sm:w-72">
-                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <span className="material-symbols-outlined text-slate-400 mb-1">
-                      cloud_upload
-                    </span>
-                    <p className="text-xs text-slate-500">
-                      <span className="font-semibold">Subir archivo</span> o
-                      arrastrar
-                    </p>
+            {[
+              {
+                icon: "badge",
+                title: "Identificación Oficial",
+                desc: "INE, Pasaporte o Cédula Profesional vigente.",
+              },
+              {
+                icon: "home_pin",
+                title: "Comprobante de Domicilio",
+                desc: "Recibo de luz, agua o teléfono (No mayor a 3 meses).",
+              },
+              {
+                icon: "article",
+                title: "Cédula RFC",
+                desc: "Constancia de Situación Fiscal actualizada.",
+              },
+            ].map((doc, idx) => {
+              const isUploaded = uploadedDocs > idx;
+              return (
+                <div
+                  key={idx}
+                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all"
+                >
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary">
+                        {doc.icon}
+                      </span>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {doc.title}
+                      </h4>
+                      {isUploaded && (
+                        <span className="material-symbols-outlined text-green-500 text-sm ml-2">
+                          check_circle
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500">{doc.desc}</p>
                   </div>
-                  <input className="hidden" type="file" />
-                </label>
-              </div>
-            </div>
-
-            {/* Upload Item 2 */}
-            <div className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all">
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">
-                    home_pin
-                  </span>
-                  <h4 className="font-bold text-slate-900 dark:text-white">
-                    Comprobante de Domicilio
-                  </h4>
-                </div>
-                <p className="text-sm text-slate-500">
-                  Recibo de luz, agua o teléfono (No mayor a 3 meses).
-                </p>
-              </div>
-              <div className="w-full sm:w-72">
-                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <span className="material-symbols-outlined text-slate-400 mb-1">
-                      cloud_upload
-                    </span>
-                    <p className="text-xs text-slate-500">
-                      <span className="font-semibold">Subir archivo</span> o
-                      arrastrar
-                    </p>
+                  <div className="w-full sm:w-72">
+                    <label
+                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-all ${isUploaded
+                          ? "border-green-500 bg-green-50 dark:bg-green-900/10 cursor-default"
+                          : "border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-primary/5 hover:border-primary/40"
+                        }`}
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <span className="material-symbols-outlined text-slate-400 mb-1">
+                          {isUploaded ? "task" : "cloud_upload"}
+                        </span>
+                        <p className="text-xs text-slate-500 text-center">
+                          {isUploaded ? (
+                            <span className="text-green-600 font-bold">
+                              Documento subido
+                            </span>
+                          ) : (
+                            <>
+                              <span className="font-semibold">
+                                Subir archivo
+                              </span>{" "}
+                              o arrastrar
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <input
+                        className="hidden"
+                        type="file"
+                        onChange={handleFileUpload}
+                        disabled={isUploaded}
+                      />
+                    </label>
                   </div>
-                  <input className="hidden" type="file" />
-                </label>
-              </div>
-            </div>
-
-            {/* Upload Item 3 */}
-            <div className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all">
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">
-                    article
-                  </span>
-                  <h4 className="font-bold text-slate-900 dark:text-white">
-                    Cédula RFC
-                  </h4>
                 </div>
-                <p className="text-sm text-slate-500">
-                  Constancia de Situación Fiscal actualizada.
-                </p>
-              </div>
-              <div className="w-full sm:w-72">
-                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <span className="material-symbols-outlined text-slate-400 mb-1">
-                      cloud_upload
-                    </span>
-                    <p className="text-xs text-slate-500">
-                      <span className="font-semibold">Subir archivo</span> o
-                      arrastrar
-                    </p>
-                  </div>
-                  <input className="hidden" type="file" />
-                </label>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </section>
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-4 pt-6">
-          <button
-            type="button"
-            className="px-8 py-3 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-          >
+          <Button variant="outline" className="px-8 py-6 rounded-xl font-bold">
             Cancelar
-          </button>
-          <button
-            type="button"
-            className="px-10 py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2"
+          </Button>
+          <Button
+            onClick={handleContinue}
+            className="px-10 py-6 rounded-xl font-bold shadow-lg shadow-primary/20 flex items-center gap-2"
           >
             Continuar
             <span className="material-symbols-outlined">arrow_forward</span>
-          </button>
+          </Button>
         </div>
       </main>
 

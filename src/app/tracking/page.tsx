@@ -1,4 +1,19 @@
+"use client";
+
+import { useAppStore } from "@/store/useAppStore";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import CedulaModal from "@/components/features/CedulaModal"; // We will create this
+
 export default function Tracking() {
+  const router = useRouter();
+  const { folio, extractedData, validationStatus } = useAppStore();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const isApproved = validationStatus === "approved";
+
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
       <div className="layout-container flex h-full grow flex-col">
@@ -16,16 +31,16 @@ export default function Tracking() {
           </div>
           <div className="flex gap-3">
             <button
-              type="button"
+              onClick={() => router.push("/")}
               className="flex items-center justify-center rounded-xl h-10 w-10 bg-primary/5 hover:bg-primary/10 text-primary dark:text-slate-100 transition-colors"
             >
-              <span className="material-symbols-outlined">notifications</span>
+              <span className="material-symbols-outlined">home</span>
             </button>
             <button
-              type="button"
+              onClick={() => router.push("/dashboard")}
               className="flex items-center justify-center rounded-xl h-10 w-10 bg-primary/5 hover:bg-primary/10 text-primary dark:text-slate-100 transition-colors"
             >
-              <span className="material-symbols-outlined">account_circle</span>
+              <span className="material-symbols-outlined">dashboard</span>
             </button>
           </div>
         </header>
@@ -40,7 +55,7 @@ export default function Tracking() {
                   chevron_right
                 </span>
                 <span className="font-medium text-primary dark:text-primary/80">
-                  GMX-992834-2023
+                  {folio || "Folio Pendiente"}
                 </span>
               </div>
               <div className="flex flex-wrap justify-between items-end gap-4">
@@ -49,17 +64,24 @@ export default function Tracking() {
                     Seguimiento de Trámite
                   </h1>
                   <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-                    Referencia: GMX-992834-2023 • Cliente: Juan Pérez García
+                    Referencia: {folio || "NO-ASIGNADO"} • Cliente:{" "}
+                    {extractedData.nombreCompleto || "Pendiente"}
                   </p>
                 </div>
-                <span className="px-3 py-1 bg-success/10 text-success text-xs font-bold uppercase tracking-wider rounded-full border border-success/20">
-                  Aprobado
-                </span>
+                {isApproved ? (
+                  <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1 px-3">
+                    APROBADO
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="font-bold py-1 px-3">
+                    EN PROCESO
+                  </Badge>
+                )}
               </div>
             </div>
 
             {/* Case Status Overview Card */}
-            <div className="@container">
+            <div>
               <div className="flex flex-col items-stretch justify-start rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-900 border border-primary/5">
                 <div
                   className="w-full h-48 bg-center bg-no-repeat bg-cover relative"
@@ -75,7 +97,9 @@ export default function Tracking() {
                       Estado del Expediente
                     </p>
                     <p className="text-white/80 text-sm">
-                      Validación final completada exitosamente
+                      {isApproved
+                        ? "Validación final completada exitosamente"
+                        : "Esperando completar validación..."}
                     </p>
                   </div>
                 </div>
@@ -83,12 +107,11 @@ export default function Tracking() {
                 <div className="flex flex-col p-6 gap-6">
                   {/* Timeline Section */}
                   <div className="relative flex flex-col gap-0">
-                    {/* Line */}
                     <div className="absolute left-[11px] top-3 bottom-3 w-[2px] bg-slate-200 dark:bg-slate-700"></div>
 
                     {/* Step 1 */}
                     <div className="relative flex items-start gap-4 pb-8">
-                      <div className="z-10 flex items-center justify-center w-6 h-6 rounded-full bg-success text-white shadow-sm shadow-success/30">
+                      <div className="z-10 flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white shadow-sm">
                         <span className="material-symbols-outlined text-sm font-bold">
                           check
                         </span>
@@ -98,42 +121,37 @@ export default function Tracking() {
                           Documento Cargado
                         </p>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          12 Oct, 2023 - 09:00 AM
+                          Completado exitosamente
                         </p>
-                        <div className="mt-2 p-3 bg-background-light dark:bg-slate-800 rounded-lg flex items-center gap-3 border border-primary/5">
-                          <span className="material-symbols-outlined text-primary">
-                            description
-                          </span>
-                          <span className="text-sm font-medium">
-                            solicitud_firmada_v2.pdf
-                          </span>
-                        </div>
                       </div>
                     </div>
 
                     {/* Step 2 */}
                     <div className="relative flex items-start gap-4 pb-8">
-                      <div className="z-10 flex items-center justify-center w-6 h-6 rounded-full bg-success text-white shadow-sm shadow-success/30">
+                      <div
+                        className={`z-10 flex items-center justify-center w-6 h-6 rounded-full text-white shadow-sm ${isApproved ? "bg-emerald-500" : "bg-amber-500"
+                          }`}
+                      >
                         <span className="material-symbols-outlined text-sm font-bold">
-                          check
+                          {isApproved ? "check" : "sync"}
                         </span>
                       </div>
                       <div className="flex flex-col">
                         <p className="text-slate-900 dark:text-slate-100 font-semibold">
                           En Proceso de Validación
                         </p>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          13 Oct, 2023 - 02:30 PM
-                        </p>
                         <p className="text-xs text-slate-400 mt-1 italic">
-                          Revisado por: Mesa de Control Central
+                          Análisis de IA GMX
                         </p>
                       </div>
                     </div>
 
                     {/* Step 3 */}
                     <div className="relative flex items-start gap-4">
-                      <div className="z-10 flex items-center justify-center w-6 h-6 rounded-full bg-success text-white shadow-sm shadow-success/30">
+                      <div
+                        className={`z-10 flex items-center justify-center w-6 h-6 rounded-full text-white shadow-sm ${isApproved ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                          }`}
+                      >
                         <span className="material-symbols-outlined text-sm font-bold">
                           verified
                         </span>
@@ -142,35 +160,35 @@ export default function Tracking() {
                         <p className="text-slate-900 dark:text-slate-100 font-semibold">
                           Validación Exitosa
                         </p>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          14 Oct, 2023 - 11:15 AM
-                        </p>
-                        <p className="text-success text-sm font-medium mt-1">
-                          El expediente cumple con todos los requisitos
-                          técnicos.
-                        </p>
+                        {isApproved && (
+                          <p className="text-emerald-500 text-sm font-medium mt-1">
+                            El expediente cumple con todos los requisitos.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* Action Area */}
-                  <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                      <span className="material-symbols-outlined">info</span>
-                      <p className="text-sm">
-                        Siguiente paso: Emisión de la póliza digital.
-                      </p>
+                  {isApproved && (
+                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <span className="material-symbols-outlined">info</span>
+                        <p className="text-sm">
+                          Siguiente paso: Emisión de la póliza digital.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full md:w-auto px-8 py-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                      >
+                        <span>Transicionar a Póliza (Ver Cédula)</span>
+                        <span className="material-symbols-outlined">
+                          arrow_forward
+                        </span>
+                      </Button>
                     </div>
-                    <button
-                      type="button"
-                      className="w-full md:w-auto px-8 py-3 bg-success hover:bg-success/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-success/20 flex items-center justify-center gap-2"
-                    >
-                      <span>Transicionar a Póliza</span>
-                      <span className="material-symbols-outlined">
-                        arrow_forward
-                      </span>
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -187,10 +205,10 @@ export default function Tracking() {
               </div>
               <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-primary/5 shadow-sm">
                 <p className="text-primary text-xs font-bold uppercase mb-1">
-                  Suma Asegurada
+                  RFC Extraído
                 </p>
-                <p className="text-slate-900 dark:text-slate-100 font-medium">
-                  $2,500,000.00 MXN
+                <p className="text-slate-900 dark:text-slate-100 font-medium truncate">
+                  {extractedData.rfc || "Pendiente"}
                 </p>
               </div>
               <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-primary/5 shadow-sm">
@@ -205,7 +223,6 @@ export default function Tracking() {
           </main>
         </div>
 
-        {/* Footer / Sidebar Preview Mini */}
         <footer className="mt-auto px-6 md:px-10 py-6 border-t border-primary/5 bg-white dark:bg-slate-900 flex flex-wrap justify-center gap-8">
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
             <span className="material-symbols-outlined text-base">
@@ -213,12 +230,12 @@ export default function Tracking() {
             </span>
             <span>¿Necesitas ayuda? Contacta a soporte</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
-            <span className="material-symbols-outlined text-base">history</span>
-            <span>Último acceso: Hoy, 10:45 AM</span>
-          </div>
         </footer>
       </div>
+
+      {isModalOpen && (
+        <CedulaModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 }
