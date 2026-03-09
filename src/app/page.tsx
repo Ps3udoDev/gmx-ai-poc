@@ -1,65 +1,303 @@
 import Image from "next/image";
 
-export default function Home() {
+export default function Registration() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="relative flex flex-col w-full">
+      {/* Top Navigation */}
+      <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 lg:px-20">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary text-white p-1.5 rounded-lg flex items-center justify-center">
+              <span className="material-symbols-outlined text-2xl">shield</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-primary">
+              GMX{" "}
+              <span className="font-medium text-slate-600 dark:text-slate-400">
+                Portal del Agente
+              </span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <span className="material-symbols-outlined">notifications</span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2"></div>
+            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                  Carlos Mendoza
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                  Agente Senior
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 overflow-hidden relative">
+                <Image
+                  className="object-cover"
+                  alt="User profile avatar professional photo"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8Q3T9a0VN2XtHmt3mK6Ew9MVhb4Nr-gQT2VSIx01opyl8tE9Pjt9FCIRn9Zn4uJ1oQxIyci1QGoIcbfQzOS6lcV-9cpAp7xmZyEWPxkQUrVTpGosp460-BhhCtlMICsqx-YDseaYvstEPJNbhD25vmUC66VR3P8-2Yjfw0dTIgJdACbXosrnGUpYWsTHrqwe96e95i7Gwq_g4jCxF1c7RvaiG5_VaW5sVdhWbZl5leKp13QGr4imuQRUBfBpoyCZt3qZ6oXjd9gko"
+                  fill
+                  unoptimized
+                />
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </header>
+
+      <main className="max-w-5xl mx-auto w-full px-6 py-10 space-y-12">
+        {/* Selection Section */}
+        <section>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+              Registro de Cliente
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">
+              Seleccione el tipo de persona para iniciar el proceso de carga de
+              documentos.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Option 1 */}
+            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
+              <input
+                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
+                name="persona_type"
+                type="radio"
+              />
+              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">
+                  person
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Persona Física Nacional
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Ciudadanos mexicanos con residencia en el país.
+              </p>
+            </label>
+            {/* Option 2 */}
+            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
+              <input
+                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
+                name="persona_type"
+                type="radio"
+              />
+              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">
+                  public
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Persona Física Extranjera
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Individuos extranjeros con residencia fuera de México.
+              </p>
+            </label>
+            {/* Option 3 */}
+            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
+              <input
+                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
+                name="persona_type"
+                type="radio"
+              />
+              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">
+                  corporate_fare
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Persona Moral Nacional
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Empresas constituidas bajo leyes mexicanas.
+              </p>
+            </label>
+            {/* Option 4 */}
+            <label className="group relative flex flex-col p-6 bg-white dark:bg-slate-900 border-2 border-transparent hover:border-primary/40 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
+              <input
+                className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
+                name="persona_type"
+                type="radio"
+              />
+              <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">
+                  business_center
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Persona Moral Extranjera
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Empresas e instituciones constituidas en el extranjero.
+              </p>
+            </label>
+          </div>
+        </section>
+
+        {/* Documentation Section */}
+        <section className="space-y-6">
+          <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                Documentación Requerida
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400">
+                Formatos aceptados: PDF, JPG, PNG (Max. 10MB)
+              </p>
+            </div>
+            <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+              0 de 3 Subidos
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            {/* Upload Item 1 */}
+            <div className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">
+                    badge
+                  </span>
+                  <h4 className="font-bold text-slate-900 dark:text-white">
+                    Identificación Oficial
+                  </h4>
+                </div>
+                <p className="text-sm text-slate-500">
+                  INE, Pasaporte o Cédula Profesional vigente.
+                </p>
+              </div>
+              <div className="w-full sm:w-72">
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <span className="material-symbols-outlined text-slate-400 mb-1">
+                      cloud_upload
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold">Subir archivo</span> o
+                      arrastrar
+                    </p>
+                  </div>
+                  <input className="hidden" type="file" />
+                </label>
+              </div>
+            </div>
+
+            {/* Upload Item 2 */}
+            <div className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">
+                    home_pin
+                  </span>
+                  <h4 className="font-bold text-slate-900 dark:text-white">
+                    Comprobante de Domicilio
+                  </h4>
+                </div>
+                <p className="text-sm text-slate-500">
+                  Recibo de luz, agua o teléfono (No mayor a 3 meses).
+                </p>
+              </div>
+              <div className="w-full sm:w-72">
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <span className="material-symbols-outlined text-slate-400 mb-1">
+                      cloud_upload
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold">Subir archivo</span> o
+                      arrastrar
+                    </p>
+                  </div>
+                  <input className="hidden" type="file" />
+                </label>
+              </div>
+            </div>
+
+            {/* Upload Item 3 */}
+            <div className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">
+                    article
+                  </span>
+                  <h4 className="font-bold text-slate-900 dark:text-white">
+                    Cédula RFC
+                  </h4>
+                </div>
+                <p className="text-sm text-slate-500">
+                  Constancia de Situación Fiscal actualizada.
+                </p>
+              </div>
+              <div className="w-full sm:w-72">
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <span className="material-symbols-outlined text-slate-400 mb-1">
+                      cloud_upload
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold">Subir archivo</span> o
+                      arrastrar
+                    </p>
+                  </div>
+                  <input className="hidden" type="file" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-4 pt-6">
+          <button
+            type="button"
+            className="px-8 py-3 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="px-10 py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2"
           >
-            Documentation
-          </a>
+            Continuar
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </button>
         </div>
       </main>
+
+      <footer className="w-full py-8 px-6 lg:px-20 border-t border-slate-200 dark:border-slate-800 mt-20">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-slate-500">
+            © 2024 GMX Seguros. Todos los derechos reservados.
+          </p>
+          <div className="flex gap-6">
+            <a
+              className="text-sm text-slate-500 hover:text-primary transition-colors"
+              href="/"
+            >
+              Aviso de Privacidad
+            </a>
+            <a
+              className="text-sm text-slate-500 hover:text-primary transition-colors"
+              href="/"
+            >
+              Términos y Condiciones
+            </a>
+            <a
+              className="text-sm text-slate-500 hover:text-primary transition-colors"
+              href="/"
+            >
+              Soporte
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
