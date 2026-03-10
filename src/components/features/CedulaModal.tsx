@@ -1,6 +1,7 @@
 import { useAppStore } from "@/store/useAppStore";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { useEffect, useState } from "react";
 
 interface CedulaModalProps {
     isOpen: boolean;
@@ -9,6 +10,47 @@ interface CedulaModalProps {
 
 export default function CedulaModal({ isOpen, onClose }: CedulaModalProps) {
     const { folio, extractedData, personaType } = useAppStore();
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!isOpen || !personaType) return;
+
+        let active = true;
+        setIsLoading(true);
+
+        fetch("/api/pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ personaType }),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to load PDF");
+                return res.blob();
+            })
+            .then((blob) => {
+                if (!active) return;
+                const url = URL.createObjectURL(blob);
+                setPdfUrl(url);
+                setIsLoading(false);
+            })
+            .catch((err) => {
+                console.error("Error fetching PDF:", err);
+                setIsLoading(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [isOpen, personaType]);
+
+    // Cleanup object URL when modal closes
+    useEffect(() => {
+        if (!isOpen && pdfUrl) {
+            URL.revokeObjectURL(pdfUrl);
+            setPdfUrl(null);
+        }
+    }, [isOpen, pdfUrl]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -26,123 +68,37 @@ export default function CedulaModal({ isOpen, onClose }: CedulaModalProps) {
                 </DialogHeader>
 
                 {/* PDF Document Area */}
-                <div className="flex-1 overflow-y-auto w-full flex justify-center py-8">
-                    <div className="bg-white shadow-xl ring-1 ring-slate-900/5  p-12 relative flex flex-col">
-                        {/* Branding Header */}
-                        <div className="flex justify-between items-start mb-12">
-                            <div className="flex items-center gap-2 text-primary">
-                                <span className="material-symbols-outlined text-4xl">shield</span>
-                                <div className="font-black text-2xl tracking-tighter">
-                                    GMX SEGUROS
-                                </div>
-                            </div>
-                            <div className="text-right text-xs text-slate-400">
-                                <p>FECHA: {new Date().toLocaleDateString("es-MX")}</p>
-                                <p>FOLIO: {folio}</p>
-                            </div>
+                <div className="flex-1 overflow-hidden w-full flex justify-center bg-slate-200/50 p-4">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-500">
+                            <span className="material-symbols-outlined text-4xl animate-spin text-primary">
+                                refresh
+                            </span>
+                            <p className="font-medium animate-pulse">Generando Cédula Oficial y Rellenando Formato...</p>
                         </div>
-
-                        {/* Document Title */}
-                        <div className="text-center mb-10">
-                            <h1 className="text-2xl font-bold text-slate-900 underline underline-offset-8 decoration-primary/30">
-                                CÉDULA DE INFORMACIÓN DEL ASEGURADO
-                            </h1>
+                    ) : pdfUrl ? (
+                        <iframe
+                            src={pdfUrl}
+                            className="w-full h-full rounded-xl shadow-lg border border-slate-300 bg-white"
+                            title="Vista Previa PDF Cédula GMX"
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full gap-4 text-rose-500">
+                            <span className="material-symbols-outlined text-4xl">
+                                error
+                            </span>
+                            <p className="font-medium">Hubo un error al generar la cédula oficial.</p>
                         </div>
-
-                        {/* Dynamic Content */}
-                        <div className="space-y-6 text-sm text-slate-800 leading-relaxed">
-                            <section>
-                                <h4 className="font-bold text-slate-900 border-b border-slate-200 pb-1 mb-3">
-                                    1. DATOS GENERALES DEL TITULAR
-                                </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs text-slate-500 uppercase">
-                                            Nombre Completo / Razón Social
-                                        </p>
-                                        <p className="font-bold text-slate-900">
-                                            {extractedData.nombreCompleto || "Dato Pendiente"}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-500 uppercase">RFC</p>
-                                        <p className="font-bold text-slate-900">
-                                            {extractedData.rfc || "Dato Pendiente"}
-                                        </p>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <p className="text-xs text-slate-500 uppercase">
-                                            Domicilio Extraído / Fiscal
-                                        </p>
-                                        <p className="font-bold text-slate-900">
-                                            {extractedData.direccion || "Dato Pendiente"}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-500 uppercase">
-                                            Tipo de Persona
-                                        </p>
-                                        <p className="font-bold text-slate-900 capitalize">
-                                            {personaType?.replace("_", " ") || "No Especificado"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </section>
-                            <section>
-                                <h4 className="font-bold text-slate-900 border-b border-slate-200 pb-1 mb-3">
-                                    2. DETALLES DE LA PÓLIZA ASIGNADA
-                                </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs text-slate-500 uppercase">
-                                            Tipo de Seguro
-                                        </p>
-                                        <p className="font-medium text-slate-900">
-                                            Responsabilidad Civil Profesional
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-500 uppercase">Vigencia</p>
-                                        <p className="font-medium text-slate-900">
-                                            Anual ({new Date().getFullYear()} - {new Date().getFullYear() + 1})
-                                        </p>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-8">
-                                <p className="italic text-slate-600 text-[11px] text-justify">
-                                    Por medio de la presente, el asegurado manifiesta que la
-                                    información extraída por el motor de IA de GMX Seguros y contenida
-                                    en esta cédula es verídica y coincide con los documentos
-                                    proporcionados. Autoriza a GMX Seguros para el tratamiento de
-                                    sus datos. Este documento requiere firma electrónica.
-                                </p>
-                            </section>
-
-                            <div className="mt-20 flex justify-around">
-                                <div className="text-center border-t border-slate-400 pt-2 w-48">
-                                    <p className="text-xs text-slate-500">Firma del Agente</p>
-                                    <p className="text-xs font-bold text-slate-900">Aprobado en Portal</p>
-                                </div>
-                                <div className="text-center border-t border-slate-300 border-dashed pt-2 w-48">
-                                    <p className="text-xs text-slate-400 italic">
-                                        Espacio para Firma Digital
-                                    </p>
-                                    <p className="text-xs font-bold text-slate-300 uppercase">
-                                        Asegurado
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Footer Actions */}
-                <DialogFooter className="px-6 py-4 pb-8 bg-white border-t border-slate-200 sm:justify-between items-center w-full shadow-lg z-10">
-                    <Button variant="outline" className="gap-2">
-                        <span className="material-symbols-outlined text-xl">download</span>
-                        Descargar PDF
+                <DialogFooter className="px-6 py-4 bg-white border-t border-slate-200 sm:justify-between items-center w-full shadow-lg z-10">
+                    <Button variant="outline" className="gap-2" asChild disabled={!pdfUrl}>
+                        <a href={pdfUrl || "#"} download={`cedula-${folio}.pdf`}>
+                            <span className="material-symbols-outlined text-xl">download</span>
+                            Descargar PDF Generado
+                        </a>
                     </Button>
                     <div className="flex gap-4">
                         <DialogClose asChild>

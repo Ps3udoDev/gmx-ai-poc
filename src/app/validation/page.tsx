@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
+import { mockData } from "@/lib/mockData";
 
 export default function Validation() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function Validation() {
     validationStatus,
     extractionProgress,
     extractedData,
+    personaType,
     setValidationProgress,
     setValidationStatus,
     setExtractedData,
@@ -38,20 +40,26 @@ export default function Validation() {
         const success = Math.random() > 0.2; // 80% success
         if (success) {
           setValidationStatus("approved");
-          setExtractedData({
-            nombreCompleto: "ALEJANDRO RODRÍGUEZ GARCÍA",
-            rfc: "ROGA880512HDF",
-            direccion:
-              "CALLE INSURGENTES SUR 1602, COLONIA CRÉDITO CONSTRUCTOR, CDMX, 03940",
+
+          // Get correct block of data mapped from JSON to Zustand state
+          const typeKey = personaType as keyof typeof mockData;
+          const currentMockData = (personaType && mockData[typeKey]) ? mockData[typeKey] as any : null;
+          const mappedData = currentMockData ? {
+            nombreCompleto: currentMockData["Nombre"] && currentMockData["Apellido paterno"]
+              ? `${currentMockData["Nombre"]} ${currentMockData["Apellido paterno"]}`
+              : currentMockData["Razón social"] || currentMockData["Razoón social"] || "",
+            rfc: currentMockData["RFC"] || "",
+            direccion: currentMockData["Calle"] || currentMockData["Dirección"] || "",
             confidence: 99.8,
-          });
-          setLocalData({
-            nombreCompleto: "ALEJANDRO RODRÍGUEZ GARCÍA",
-            rfc: "ROGA880512HDF",
-            direccion:
-              "CALLE INSURGENTES SUR 1602, COLONIA CRÉDITO CONSTRUCTOR, CDMX, 03940",
-            confidence: 99.8,
-          });
+          } : {
+            nombreCompleto: "FALTA ASIGNAR",
+            rfc: "N/A",
+            direccion: "N/A",
+            confidence: 99.8
+          };
+
+          setExtractedData(mappedData);
+          setLocalData(mappedData);
           toast.success("Extracción completada con alta confianza");
         } else {
           setValidationStatus("manual_review");
