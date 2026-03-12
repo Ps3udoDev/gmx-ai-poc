@@ -2,42 +2,75 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAppStore, PersonaType } from "@/store/useAppStore";
+import { requiredDocuments, DocumentRequirement } from "@/lib/documentRequirements";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Registration() {
   const router = useRouter();
   const { setPersonaType, personaType, setDocumentsUploaded, generateFolio } =
     useAppStore();
 
-  const [uploadedDocs, setUploadedDocs] = useState<number>(0);
+  const [uploadedDocsIds, setUploadedDocsIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [fastTrackCedulaLoaded, setFastTrackCedulaLoaded] = useState(false);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const currentDocs: DocumentRequirement[] = useMemo(() => {
+    return personaType ? requiredDocuments[personaType] || [] : [];
+  }, [personaType]);
+
+  const handlePersonaChange = (type: PersonaType) => {
+    setPersonaType(type);
+    setUploadedDocsIds([]); // Reset on type change
+    setFastTrackCedulaLoaded(false);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, activeDocId: string) => {
     if (e.target.files && e.target.files.length > 0) {
-      if (uploadedDocs < 3) {
-        setUploadedDocs((prev) => prev + 1);
+      if (!uploadedDocsIds.includes(activeDocId)) {
+        setUploadedDocsIds((prev) => [...prev, activeDocId]);
         toast.success("Documento cargado correctamente");
       }
     }
   };
+
+  const handleFastTrackCedula = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+          setFastTrackCedulaLoaded(true);
+          // Fast-tracking automatically marks the first 3 fundamental docs as loaded for convenience
+          if (currentDocs.length > 0) {
+              const idsToFill = currentDocs.slice(0, 3).map(d => d.id);
+              setUploadedDocsIds(prev => Array.from(new Set([...prev, ...idsToFill])));
+          }
+          toast.success("Cédula precargada. Autocompletados requisitos fundamentales.");
+      }
+  }
 
   const handleContinue = () => {
     if (!personaType) {
       toast.error("Por favor seleccione un tipo de persona");
       return;
     }
-    if (uploadedDocs < 3) {
-      toast.error("Debe subir los 3 documentos requeridos");
+    
+    // Check if total uploaded matches required (or forced fast track validation bypass)
+    const requiredCount = currentDocs.length;
+    if (uploadedDocsIds.length < requiredCount && !fastTrackCedulaLoaded) {
+      toast.error(`Faltan documentos requeridos (${uploadedDocsIds.length}/${requiredCount})`);
       return;
     }
 
-    setDocumentsUploaded(uploadedDocs);
+    setDocumentsUploaded(uploadedDocsIds.length);
     generateFolio();
     router.push("/validation");
   };
+
+  const progressPercent = currentDocs.length > 0 
+    ? Math.round((uploadedDocsIds.length / currentDocs.length) * 100) 
+    : 0;
 
   return (
     <div className="relative flex flex-col w-full">
@@ -131,7 +164,7 @@ export default function Registration() {
                     ? "border-primary bg-primary/5"
                     : "border-transparent hover:border-primary/40 hover:shadow-md"
                   }`}
-                onClick={() => setPersonaType(option.id as PersonaType)}
+                onClick={() => handlePersonaChange(option.id as PersonaType)}
               >
                 <input
                   className="absolute top-4 right-4 w-5 h-5 text-primary focus:ring-primary border-slate-300 rounded-full"
@@ -154,100 +187,148 @@ export default function Registration() {
           </div>
         </section>
 
-        <section className="space-y-6">
-          <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Documentación Requerida
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400">
-                Formatos aceptados: PDF, JPG, PNG (Max. 10MB)
-              </p>
-            </div>
-            <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              {uploadedDocs} de 3 Subidos
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            {[
-              {
-                icon: "badge",
-                title: "Identificación Oficial",
-                desc: "INE, Pasaporte o Cédula Profesional vigente.",
-              },
-              {
-                icon: "home_pin",
-                title: "Comprobante de Domicilio",
-                desc: "Recibo de luz, agua o teléfono (No mayor a 3 meses).",
-              },
-              {
-                icon: "article",
-                title: "Cédula RFC",
-                desc: "Constancia de Situación Fiscal actualizada.",
-              },
-            ].map((doc, idx) => {
-              const isUploaded = uploadedDocs > idx;
-              return (
-                <div
-                  key={idx}
-                  className="group flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all"
-                >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-primary">
-                        {doc.icon}
-                      </span>
-                      <h4 className="font-bold text-slate-900 dark:text-white">
-                        {doc.title}
-                      </h4>
-                      {isUploaded && (
-                        <span className="material-symbols-outlined text-green-500 text-sm ml-2">
-                          check_circle
-                        </span>
-                      )}
+        <AnimatePresence mode="wait">
+        {personaType && (
+            <motion.section 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+            {/* Fast-Track Cedula Upload MenuBar */}
+            <div className="bg-slate-900 dark:bg-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg text-white mb-8 border border-slate-700/50">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-white">magic_button</span>
                     </div>
-                    <p className="text-sm text-slate-500">{doc.desc}</p>
-                  </div>
-                  <div className="w-full sm:w-72">
-                    <label
-                      className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition-all ${isUploaded
-                          ? "border-green-500 bg-green-50 dark:bg-green-900/10 cursor-default"
-                          : "border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-primary/5 hover:border-primary/40"
-                        }`}
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <span className="material-symbols-outlined text-slate-400 mb-1">
-                          {isUploaded ? "task" : "cloud_upload"}
-                        </span>
-                        <p className="text-xs text-slate-500 text-center">
-                          {isUploaded ? (
-                            <span className="text-green-600 font-bold">
-                              Documento subido
-                            </span>
-                          ) : (
+                    <div>
+                        <h3 className="font-bold text-sm">¿Ya cuentas con tu Cédula GMX?</h3>
+                        <p className="text-xs text-slate-400">Sube tu archivo previo y autocompleta los requisitos básicos al instante.</p>
+                    </div>
+                </div>
+                <div className="flex-shrink-0 w-full sm:w-auto">
+                    <label className={`w-full sm:w-auto font-bold py-2.5 px-6 rounded-lg shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-colors ${fastTrackCedulaLoaded ? 'bg-green-500 hover:bg-green-600' : 'bg-primary hover:bg-primary/90'}`}>
+                        {fastTrackCedulaLoaded ? (
+                             <>
+                                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                Cédula Precargada
+                             </>
+                        ) : (
                             <>
-                              <span className="font-semibold">
-                                Subir archivo
-                              </span>{" "}
-                              o arrastrar
+                                <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                                Cargar Cédula Rapida
                             </>
-                          )}
-                        </p>
-                      </div>
-                      <input
-                        className="hidden"
-                        type="file"
-                        onChange={handleFileUpload}
-                        disabled={isUploaded}
-                      />
+                        )}
+                        <input className="hidden" type="file" accept=".pdf" onChange={handleFastTrackCedula} />
                     </label>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                      Documentación Requerida
+                    </h2>
+                    <p className="text-slate-500 dark:text-slate-400">
+                      Revise la lista requerida para su persona. Formatos: PDF, JPG, PNG (Max. 10MB)
+                    </p>
+                  </div>
+                  
+                  {/* View Toggles & Status Badge */}
+                  <div className="flex items-center gap-3 self-end sm:self-auto">
+                      <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                          <button 
+                            onClick={() => setViewMode("list")}
+                            className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-white dark:bg-slate-700 shadow-sm text-primary" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                          >
+                             <span className="material-symbols-outlined text-[20px] block">view_list</span>
+                          </button>
+                          <button 
+                            onClick={() => setViewMode("grid")}
+                            className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-white dark:bg-slate-700 shadow-sm text-primary" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                          >
+                             <span className="material-symbols-outlined text-[20px] block">grid_view</span>
+                          </button>
+                      </div>
+                    <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider whitespace-nowrap">
+                      {uploadedDocsIds.length} de {currentDocs.length}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
+                <Progress value={progressPercent} className="h-2 w-full" />
+            </div>
+
+            <div className={`grid gap-4 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
+                {currentDocs.map((doc) => {
+                const isUploaded = uploadedDocsIds.includes(doc.id);
+                return (
+                    <motion.div
+                      layout
+                      key={doc.id}
+                      className={`group flex ${viewMode === "grid" ? "flex-col items-center text-center justify-between p-6" : "flex-col sm:flex-row items-start sm:items-center p-4"} gap-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all shadow-sm`}
+                    >
+                    <div className={`flex-1 space-y-1 w-full ${viewMode === "grid" ? "flex flex-col items-center" : "text-left"}`}>
+                        <div className={`flex items-center gap-2 ${viewMode === "grid" ? "justify-center mb-2" : ""}`}>
+                          {viewMode === "grid" && (
+                              <div className={`p-2 rounded-lg ${isUploaded ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"}`}>
+                                  <span className="material-symbols-outlined">
+                                    {isUploaded ? "task" : "description"}
+                                  </span>
+                              </div>
+                          )}
+                          <h4 className="font-bold text-slate-900 dark:text-white leading-tight">
+                            {doc.title}
+                          </h4>
+                          {isUploaded && viewMode === "list" && (
+                            <span className="material-symbols-outlined text-green-500 text-[18px] ml-1">
+                              check_circle
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-xs text-slate-500 leading-relaxed ${viewMode === "grid" ? "px-2" : ""}`}>
+                            {doc.description || "Subir documento oficial vigente."}
+                        </p>
+                    </div>
+                    
+                    <div className={`w-full ${viewMode === "list" ? "sm:w-60" : "mt-2"}`}>
+                        <label
+                        className={`flex flex-col items-center justify-center w-full min-h-[5rem] border-2 border-dashed rounded-lg transition-all ${isUploaded
+                            ? "border-green-500 bg-green-50 dark:bg-green-900/10 cursor-default"
+                            : "border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-primary/5 hover:border-primary/40"
+                            }`}
+                        >
+                        <div className="flex flex-col items-center justify-center p-3">
+                            {viewMode === "list" && (
+                                <span className="material-symbols-outlined text-slate-400 mb-1 text-[20px]">
+                                {isUploaded ? "task" : "cloud_upload"}
+                                </span>
+                            )}
+                            <p className="text-[11px] text-slate-500 text-center">
+                            {isUploaded ? (
+                                <span className="text-green-600 font-bold">Documento subido</span>
+                            ) : (
+                                <>
+                                <span className="font-semibold text-primary">Subir</span> o arrastrar
+                                </>
+                            )}
+                            </p>
+                        </div>
+                        <input
+                            className="hidden"
+                            type="file"
+                            onChange={(e) => handleFileUpload(e, doc.id)}
+                            disabled={isUploaded}
+                        />
+                        </label>
+                    </div>
+                    </motion.div>
+                );
+                })}
+            </div>
+            </motion.section>
+        )}
+        </AnimatePresence>
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-4 pt-6">
