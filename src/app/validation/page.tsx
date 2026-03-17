@@ -28,63 +28,150 @@ export default function Validation() {
   const [localData, setLocalData] = useState(extractedData);
 
   useEffect(() => {
-    // Start simulation on mount
+    let isSubscribed = true;
     setValidationStatus("extracting");
     setValidationProgress(0);
 
     const interval = setInterval(() => {
       const prev = useAppStore.getState().extractionProgress;
-      if (prev >= 100) {
-        clearInterval(interval);
-        // AI Simulation result
-        const success = Math.random() > 0.2; // 80% success
-        if (success) {
-          setValidationStatus("approved");
-
-          // Get correct block of data mapped from JSON to Zustand state
-          const typeKey = personaType as keyof typeof mockData;
-          const currentMockData = (personaType && mockData[typeKey]) ? mockData[typeKey] as any : null;
-          const mappedData = currentMockData ? {
-            nombreCompleto: currentMockData["Nombre"] && currentMockData["Apellido paterno"]
-              ? `${currentMockData["Nombre"]} ${currentMockData["Apellido paterno"]}`
-              : currentMockData["Razón social"] || currentMockData["Razoón social"] || "",
-            rfc: currentMockData["RFC"] || "",
-            direccion: currentMockData["Calle"] || currentMockData["Dirección"] || "",
-            confidence: 99.8,
-          } : {
-            nombreCompleto: "FALTA ASIGNAR",
-            rfc: "N/A",
-            direccion: "N/A",
-            confidence: 99.8
-          };
-
-          setExtractedData(mappedData);
-          setLocalData(mappedData);
-          toast.success("Extracción completada con alta confianza");
-        } else {
-          setValidationStatus("manual_review");
-          setExtractedData({
-            nombreCompleto: "ALEJANDRO RODRÍGUEZ", // Incomplete
-            rfc: "",
-            direccion: "CALLE INSURGENTES SUR 1602",
-            confidence: 45.2,
-          });
-          setLocalData({
-            nombreCompleto: "ALEJANDRO RODRÍGUEZ",
-            rfc: "",
-            direccion: "CALLE INSURGENTES SUR 1602",
-            confidence: 45.2,
-          });
-          toast.error(
-            "Confianza baja en extracción. Se requiere revisión manual",
-          );
-        }
-      } else {
-        setValidationProgress(prev + Math.floor(Math.random() * 15) + 5); // Random jump 5-20%
-      }
+      setValidationProgress(prev < 90 ? prev + Math.floor(Math.random() * 10) + 2 : 90);
     }, 500);
 
-    return () => clearInterval(interval);
+    const processDocuments = async () => {
+      try {
+        const { uploadedFiles, personaType } = useAppStore.getState();
+        const promises = [];
+
+        // 1. Passport (id_oficial)
+        if (uploadedFiles["id_oficial"] && uploadedFiles["id_oficial"].length > 0) {
+          const file = uploadedFiles["id_oficial"][0];
+          const isPdf = file.type === "application/pdf";
+          const endpoint = isPdf 
+            ? "https://gmx-ai-api.vercel.app/api/passport_pdf" 
+            : "https://gmx-ai-api.vercel.app/api/passport_img";
+          
+          const formData = new FormData();
+          formData.append("file", file);
+          
+          promises.push(
+            fetch(endpoint, { method: "POST", body: formData })
+              .then((res) => {
+                  if (!res.ok) throw new Error("API Passport falló");
+                  return res.json();
+              })
+              .then((data) => ({ source: "passport", data }))
+              .catch((e) => ({ source: "passport", error: e }))
+          );
+        }
+
+        // 2. CSF (rfc / cif)
+        const csfFiles = [...(uploadedFiles["rfc"] || []), ...(uploadedFiles["cif"] || [])];
+        if (csfFiles.length > 0) {
+          // Send to correct endpoint depending on if there are PDFs or only Images
+          const hasPdf = csfFiles.some((f) => f.type === "application/pdf");
+          const endpoint = hasPdf 
+            ? "https://gmx-ai-api.vercel.app/api/csf_pdf" 
+            : "https://gmx-ai-api.vercel.app/api/csf_img";
+          
+          const formData = new FormData();
+          csfFiles.forEach((f) => formData.append("file", f));
+          
+          promises.push(
+            fetch(endpoint, { method: "POST", body: formData })
+              .then((res) => {
+                  if (!res.ok) throw new Error("API CSF falló");
+                  return res.json();
+              })
+              .then((data) => ({ source: "csf", data }))
+              .catch((e) => ({ source: "csf", error: e }))
+          );
+        }
+
+        // Fallback to mock behavior if no real files were provided (e.g. Fast Track)
+        if (promises.length === 0) {
+          setTimeout(() => {
+            if (!isSubscribed) return;
+            clearInterval(interval);
+            setValidationProgress(100);
+            const typeKey = personaType as keyof typeof mockData;
+            const currentMockData = (personaType && mockData[typeKey]) ? mockData[typeKey] as any : null;
+            const fallbackData = currentMockData ? {
+              nombreCompleto: currentMockData["Nombre"] && currentMockData["Apellido paterno"]
+                ? `${currentMockData["Nombre"]} ${currentMockData["Apellido paterno"]}`
+                : currentMockData["Razón social"] || "",
+              rfc: currentMockData["RFC"] || "",
+              direccion: currentMockData["Calle"] || "",
+              confidence: 99.8,
+            } : {
+              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", direccion: "N/A", confidence: 99.8
+            };
+            setExtractedData(fallbackData);
+            setLocalData(fallbackData);
+            setValidationStatus("approved");
+            toast.success("Simulación rápida completada");
+          }, 3000);
+          return;
+        }
+
+        // Real API Fetch Execution
+        const results = await Promise.all(promises);
+        if (!isSubscribed) return;
+        clearInterval(interval);
+        setValidationProgress(100);
+
+        let nombreCompleto = "";
+        let rfc = "";
+        let direccion = "";
+        let confidence = 99.8;
+
+        results.forEach((res: any) => {
+           if (res.error) {
+              console.error("API Extraction Error", res.error);
+              confidence = Math.min(confidence, 45.0);
+           } else if (res.source === "passport" && res.data.response) {
+              const holder = res.data.response.holder;
+              nombreCompleto = `${holder.firstName} ${holder.lastName}`;
+           } else if (res.source === "csf" && res.data.response) {
+              const doc = res.data.response.processedDocuments[0];
+              const iden = doc.taxpayerIdentity;
+              const addr = doc.registeredAddress;
+              rfc = iden.rfc;
+              if (!nombreCompleto) {
+                  nombreCompleto = iden.fullName || iden.businessName || "";
+              }
+              if (addr) {
+                  direccion = `${addr.streetName || ''} ${addr.outdoorNumber || ''}, ${addr.neighborhood || ''}, ${addr.state || ''}`.trim();
+              }
+           }
+        });
+
+        const finalData = { nombreCompleto, rfc, direccion, confidence };
+        setExtractedData(finalData);
+        setLocalData(finalData);
+
+        if (confidence > 80) {
+            setValidationStatus("approved");
+            toast.success("Extracción por API completada con éxito");
+        } else {
+            setValidationStatus("manual_review");
+            toast.error("Confianza baja o error en API. Se requiere revisión manual");
+        }
+
+      } catch (error) {
+        if (!isSubscribed) return;
+        clearInterval(interval);
+        setValidationProgress(100);
+        setValidationStatus("manual_review");
+        toast.error("Fallo crítico validando los documentos");
+      }
+    };
+
+    processDocuments();
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleManualSave = () => {

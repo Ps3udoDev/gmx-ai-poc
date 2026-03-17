@@ -32,9 +32,14 @@ interface AppState {
     extractionProgress: number;
     extractedData: ExtractedData;
 
+    // Files Payload for Backend Extraction
+    uploadedFiles: Record<string, File[]>;
+
     // Actions
     setPersonaType: (type: PersonaType) => void;
     setDocumentsUploaded: (count: number) => void;
+    addUploadedFiles: (docId: string, files: File[]) => void;
+    clearUploadedFiles: () => void;
     generateFolio: () => void;
 
     startValidation: () => void;
@@ -62,9 +67,15 @@ export const useAppStore = create<AppState>((set) => ({
         direccion: "",
         confidence: 0,
     },
+    uploadedFiles: {},
 
     setPersonaType: (type) => set({ personaType: type }),
     setDocumentsUploaded: (count) => set({ documentsUploaded: count }),
+    addUploadedFiles: (docId, files) => 
+        set((state) => ({ 
+            uploadedFiles: { ...state.uploadedFiles, [docId]: files } 
+        })),
+    clearUploadedFiles: () => set({ uploadedFiles: {} }),
     generateFolio: () => set({ folio: generateRandomFolio() }),
 
     startValidation: () =>
@@ -82,6 +93,7 @@ export const useAppStore = create<AppState>((set) => ({
             folio: null,
             validationStatus: "idle",
             extractionProgress: 0,
+            uploadedFiles: {},
             extractedData: {
                 nombreCompleto: "",
                 rfc: "",

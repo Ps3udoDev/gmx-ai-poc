@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 export default function Registration() {
   const router = useRouter();
-  const { setPersonaType, personaType, setDocumentsUploaded, generateFolio } =
+  const { setPersonaType, personaType, setDocumentsUploaded, generateFolio, addUploadedFiles } =
     useAppStore();
 
   const [uploadedDocsIds, setUploadedDocsIds] = useState<string[]>([]);
@@ -33,7 +33,8 @@ export default function Registration() {
     if (e.target.files && e.target.files.length > 0) {
       if (!uploadedDocsIds.includes(activeDocId)) {
         setUploadedDocsIds((prev) => [...prev, activeDocId]);
-        toast.success("Documento cargado correctamente");
+        addUploadedFiles(activeDocId, Array.from(e.target.files));
+        toast.success(`Documento${e.target.files.length > 1 ? 's' : ''} cargado${e.target.files.length > 1 ? 's' : ''} correctamente`);
       }
     }
   };
@@ -56,10 +57,13 @@ export default function Registration() {
       return;
     }
     
-    // Check if total uploaded matches required (or forced fast track validation bypass)
-    const requiredCount = currentDocs.length;
-    if (uploadedDocsIds.length < requiredCount && !fastTrackCedulaLoaded) {
-      toast.error(`Faltan documentos requeridos (${uploadedDocsIds.length}/${requiredCount})`);
+    // Check if total uploaded matches REQUIRED files (or forced fast track validation bypass)
+    const requiredDocs = currentDocs.filter(d => !d.optional);
+    const requiredCount = requiredDocs.length;
+    const uploadedRequiredCount = requiredDocs.filter(d => uploadedDocsIds.includes(d.id)).length;
+    
+    if (uploadedRequiredCount < requiredCount && !fastTrackCedulaLoaded) {
+      toast.error(`Faltan documentos obligatorios (${uploadedRequiredCount}/${requiredCount})`);
       return;
     }
 
@@ -68,8 +72,11 @@ export default function Registration() {
     router.push("/validation");
   };
 
-  const progressPercent = currentDocs.length > 0 
-    ? Math.round((uploadedDocsIds.length / currentDocs.length) * 100) 
+  const requiredOnlyDocs = currentDocs.filter(d => !d.optional);
+  const uploadedRequired = requiredOnlyDocs.filter(d => uploadedDocsIds.includes(d.id)).length;
+
+  const progressPercent = requiredOnlyDocs.length > 0 
+    ? Math.round((uploadedRequired / requiredOnlyDocs.length) * 100) 
     : 0;
 
   return (
@@ -252,7 +259,7 @@ export default function Registration() {
                           </button>
                       </div>
                     <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider whitespace-nowrap">
-                      {uploadedDocsIds.length} de {currentDocs.length}
+                      {uploadedRequired} de {requiredOnlyDocs.length} Obligatorios
                     </span>
                   </div>
                 </div>
@@ -278,7 +285,7 @@ export default function Registration() {
                               </div>
                           )}
                           <h4 className="font-bold text-slate-900 dark:text-white leading-tight">
-                            {doc.title}
+                            {doc.title} {doc.optional && <span className="text-[10px] text-slate-400 font-normal uppercase ml-1">(Opcional)</span>}
                           </h4>
                           {isUploaded && viewMode === "list" && (
                             <span className="material-symbols-outlined text-green-500 text-[18px] ml-1">
@@ -317,6 +324,8 @@ export default function Registration() {
                         <input
                             className="hidden"
                             type="file"
+                            multiple={doc.multiple}
+                            accept={doc.accept}
                             onChange={(e) => handleFileUpload(e, doc.id)}
                             disabled={isUploaded}
                         />
