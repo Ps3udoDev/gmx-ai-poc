@@ -66,8 +66,8 @@ export async function POST(request: Request) {
         };
 
         // Static Hardcoded Agent Metadata 
-        tryMultipleFields(["Nombre del agente", "Agente"], "AGENTE DEMO GMX");
-        tryMultipleFields(["Nombre del ejecutivo", "Ejecutivo de la cuenta", "Ejecutivo"], "EJECUTIVO DEMO GMX");
+        tryMultipleFields(["Nombre del agente", "Agente"], "IA Articulo 492");
+        tryMultipleFields(["Nombre del ejecutivo", "Ejecutivo de la cuenta", "Ejecutivo"], "IA Articulo 492");
         
         // Emulate today's precise Agent Date Document Time
         const today = new Date();
@@ -114,6 +114,14 @@ export async function POST(request: Request) {
             tryMultipleFields(["Giro", "Actividad"], extractedData.giro);
             tryMultipleFields(["Monto mensual declarado", "Monto"], extractedData.montoMensual);
             tryMultipleFields(["Último cargo PPE", "Último cargo PEP'S"], extractedData.pepCargo);
+            
+            // Corporate / Legal Representative Binding (Moral Person)
+            tryMultipleFields(["Folio mercantil"], extractedData.folioMercantil);
+            tryMultipleFields(["RFC representante legal"], extractedData.repLegalRFC);
+            tryMultipleFields(["Cargo"], extractedData.repLegalCargo);
+            tryMultipleFields(["Domicilio Rep Legal"], extractedData.repLegalDomicilio);
+            // In the moral.json format template, 'Nombre completo' explicitly belongs to the Legal Representative
+            tryMultipleFields(["Nombre completo"], extractedData.repLegalNombre);
         }
         // Flatten form so it becomes uneditable and prints firmly
         form.flatten();

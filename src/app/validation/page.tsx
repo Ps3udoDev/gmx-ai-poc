@@ -176,8 +176,13 @@ export default function Validation() {
               firmaElectronica: "",
               isPep: null,
               pepCargo: "",
+              folioMercantil: "",
+              repLegalNombre: "",
+              repLegalRFC: "",
+              repLegalCargo: "",
+              repLegalDomicilio: "",
             } : {
-              nombreCompleto: "FALTA ASIGNAR", nombre: "", apellidoPaterno: "", apellidoMaterno: "", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8, fechaNacimiento: "", nacionalidad: "", paisNacimiento: "", entidadNacimiento: "", giro: "", montoMensual: "", firmaElectronica: "", isPep: null, pepCargo: ""
+              nombreCompleto: "FALTA ASIGNAR", nombre: "", apellidoPaterno: "", apellidoMaterno: "", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8, fechaNacimiento: "", nacionalidad: "", paisNacimiento: "", entidadNacimiento: "", giro: "", montoMensual: "", firmaElectronica: "", isPep: null, pepCargo: "", folioMercantil: "", repLegalNombre: "", repLegalRFC: "", repLegalCargo: "", repLegalDomicilio: ""
             };
             setExtractedData(fallbackData);
             setLocalData(fallbackData);
@@ -219,6 +224,11 @@ export default function Validation() {
         let firmaElectronica = "";
         let isPep: boolean | null = null;
         let pepCargo = "";
+        let folioMercantil = "";
+        let repLegalNombre = "";
+        let repLegalRFC = "";
+        let repLegalCargo = "";
+        let repLegalDomicilio = "";
 
         results.forEach((res: any) => {
            console.log(`--- [API RAW RESPONSE - ${res.source ? res.source.toUpperCase() : 'UNKNOWN'}] ---`, res.data);
@@ -334,6 +344,8 @@ export default function Validation() {
                       rfc = iden.rfc || rfc;
                       curp = iden.curp || curp;
                       email = iden.email || email;
+                      folioMercantil = iden.mercantileFolio || folioMercantil;
+                      nacionalidad = iden.nationality || nacionalidad;
                       if (!nombreCompleto || nombreCompleto === "FALTA ASIGNAR") {
                           nombreCompleto = iden.fullNameOrBusinessName || 
                               `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
@@ -341,7 +353,20 @@ export default function Validation() {
                       nombre = iden.firstName || nombre;
                       apellidoPaterno = iden.paternalLastName || apellidoPaterno;
                       apellidoMaterno = iden.maternalLastName || apellidoMaterno;
+                      if (doc.taxProfile?.businessLineOrActivity) {
+                      giro = doc.taxProfile.businessLineOrActivity || giro;
                   }
+                  if (doc.taxProfile?.monthlyDeclaredIncome) {
+                      montoMensual = doc.taxProfile.monthlyDeclaredIncome.toString() || montoMensual;
+                  }
+                  if (doc.thirdPartyData?.legalRepresentative) {
+                      const rep = doc.thirdPartyData.legalRepresentative;
+                      repLegalNombre = rep.fullName || repLegalNombre;
+                      repLegalRFC = rep.rfc || repLegalRFC;
+                      repLegalCargo = rep.position || repLegalCargo;
+                      repLegalDomicilio = rep.address || repLegalDomicilio;
+                  }
+              }
                   if (doc.addressAndContact?.fiscalAddress) {
                       const a = doc.addressAndContact.fiscalAddress;
                       calle = a.street || calle;
@@ -376,7 +401,7 @@ export default function Validation() {
            }
         });
 
-        const finalData = { nombreCompleto, nombre, apellidoPaterno, apellidoMaterno, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence, fechaNacimiento, nacionalidad, paisNacimiento, entidadNacimiento, giro, montoMensual, firmaElectronica, isPep, pepCargo };
+        const finalData = { nombreCompleto, nombre, apellidoPaterno, apellidoMaterno, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence, fechaNacimiento, nacionalidad, paisNacimiento, entidadNacimiento, giro, montoMensual, firmaElectronica, isPep, pepCargo, folioMercantil, repLegalNombre, repLegalRFC, repLegalCargo, repLegalDomicilio };
         console.log("--- [FINAL EXTRACTED DATA PUSHED TO ZUSTAND] ---", finalData);
         
         setExtractedData(finalData);

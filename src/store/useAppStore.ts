@@ -39,6 +39,11 @@ export interface ExtractedData {
     firmaElectronica: string;
     isPep: boolean | null;
     pepCargo: string;
+    folioMercantil: string;
+    repLegalNombre: string;
+    repLegalRFC: string;
+    repLegalCargo: string;
+    repLegalDomicilio: string;
     confidence: number;
 }
 
@@ -109,6 +114,11 @@ export const useAppStore = create<AppState>((set) => ({
         firmaElectronica: "",
         isPep: null,
         pepCargo: "",
+        folioMercantil: "",
+        repLegalNombre: "",
+        repLegalRFC: "",
+        repLegalCargo: "",
+        repLegalDomicilio: "",
         confidence: 0,
     },
     uploadedFiles: {},
@@ -185,6 +195,11 @@ export const useAppStore = create<AppState>((set) => ({
                 firmaElectronica: "",
                 isPep: null,
                 pepCargo: "",
+                folioMercantil: "",
+                repLegalNombre: "",
+                repLegalRFC: "",
+                repLegalCargo: "",
+                repLegalDomicilio: "",
                 confidence: 0,
             },
         }),
