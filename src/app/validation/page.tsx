@@ -164,8 +164,17 @@ export default function Validation() {
               ciudad: currentMockData["Ciudad población"] || currentMockData["Ciudad o población"] || currentMockData["Ciudad"] || "",
               estado: currentMockData["Entidad federativa"] || "",
               confidence: 99.8,
+              fechaNacimiento: "",
+              nacionalidad: "",
+              paisNacimiento: "",
+              entidadNacimiento: "",
+              giro: "",
+              montoMensual: "",
+              firmaElectronica: "",
+              isPep: null,
+              pepCargo: "",
             } : {
-              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8
+              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8, fechaNacimiento: "", nacionalidad: "", paisNacimiento: "", entidadNacimiento: "", giro: "", montoMensual: "", firmaElectronica: "", isPep: null, pepCargo: ""
             };
             setExtractedData(fallbackData);
             setLocalData(fallbackData);
@@ -193,7 +202,17 @@ export default function Validation() {
         let curp = "";
         let email = "";
         let telefono = "";
-        let confidence = 99.8;
+        let confidence = 100.0;
+        
+        let fechaNacimiento = "";
+        let nacionalidad = "";
+        let paisNacimiento = "";
+        let entidadNacimiento = "";
+        let giro = "";
+        let montoMensual = "";
+        let firmaElectronica = "";
+        let isPep: boolean | null = null;
+        let pepCargo = "";
 
         results.forEach((res: any) => {
            console.log(`--- [API RAW RESPONSE - ${res.source ? res.source.toUpperCase() : 'UNKNOWN'}] ---`, res.data);
@@ -210,6 +229,10 @@ export default function Validation() {
                       console.log("Passport mapping holder:", holder);
                       const newName = `${holder.firstName || ''} ${holder.lastName || ''}`.trim();
                       if (newName) nombreCompleto = newName;
+                      fechaNacimiento = holder.dateOfBirth || fechaNacimiento;
+                      nacionalidad = holder.nationality || nacionalidad;
+                      paisNacimiento = holder.issuingCountry || paisNacimiento;
+                      entidadNacimiento = holder.placeOfBirth || entidadNacimiento;
                   } 
                   else if (apiBody.processedDocuments && apiBody.processedDocuments.length > 0 && apiBody.processedDocuments[0].datosPersonales) {
                       const dp = apiBody.processedDocuments[0].datosPersonales;
@@ -220,6 +243,8 @@ export default function Validation() {
                       if (apiBody.processedDocuments[0].credencialesElectorales?.curp) {
                           curp = apiBody.processedDocuments[0].credencialesElectorales.curp;
                       }
+                      fechaNacimiento = dp.fechaNacimiento || fechaNacimiento;
+                      paisNacimiento = apiBody.processedDocuments[0].pais || paisNacimiento;
                       
                       if (dp.domicilio) {
                           const d = dp.domicilio;
@@ -260,6 +285,13 @@ export default function Validation() {
                       estado = addr.state || estado;
                       
                       direccion = `${addr.streetName || ''} ${addr.outdoorNumber || ''}, ${addr.neighborhood || ''}, ${addr.state || ''}`.trim();
+                  }
+                  
+                  if (doc.taxProfile?.economicActivities && doc.taxProfile.economicActivities.length > 0) {
+                      giro = doc.taxProfile.economicActivities[0].activity || giro;
+                  }
+                  if (doc.security?.digitalSeal) {
+                      firmaElectronica = doc.security.digitalSeal;
                   }
               }
               else if (res.source === "servicio" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
@@ -324,7 +356,7 @@ export default function Validation() {
            }
         });
 
-        const finalData = { nombreCompleto, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence };
+        const finalData = { nombreCompleto, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence, fechaNacimiento, nacionalidad, paisNacimiento, entidadNacimiento, giro, montoMensual, firmaElectronica, isPep, pepCargo };
         console.log("--- [FINAL EXTRACTED DATA PUSHED TO ZUSTAND] ---", finalData);
         
         setExtractedData(finalData);

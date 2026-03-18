@@ -27,6 +27,15 @@ export interface ExtractedData {
     curp: string;
     email: string;
     telefono: string;
+    fechaNacimiento: string;
+    nacionalidad: string;
+    paisNacimiento: string;
+    entidadNacimiento: string;
+    giro: string;
+    montoMensual: string;
+    firmaElectronica: string;
+    isPep: boolean | null;
+    pepCargo: string;
     confidence: number;
 }
 
@@ -85,6 +94,15 @@ export const useAppStore = create<AppState>((set) => ({
         curp: "",
         email: "",
         telefono: "",
+        fechaNacimiento: "",
+        nacionalidad: "",
+        paisNacimiento: "",
+        entidadNacimiento: "",
+        giro: "",
+        montoMensual: "",
+        firmaElectronica: "",
+        isPep: null,
+        pepCargo: "",
         confidence: 0,
     },
     uploadedFiles: {},
@@ -149,6 +167,15 @@ export const useAppStore = create<AppState>((set) => ({
                 curp: "",
                 email: "",
                 telefono: "",
+                fechaNacimiento: "",
+                nacionalidad: "",
+                paisNacimiento: "",
+                entidadNacimiento: "",
+                giro: "",
+                montoMensual: "",
+                firmaElectronica: "",
+                isPep: null,
+                pepCargo: "",
                 confidence: 0,
             },
         }),

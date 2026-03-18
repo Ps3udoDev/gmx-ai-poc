@@ -17,123 +17,79 @@ export async function POST(request: Request) {
 
         const typeKey = personaType as keyof typeof pdfMap;
         const fileName = pdfMap[typeKey];
-        const baseData = mockData[typeKey];
         
-        // Merge base mock data with actual extracted AI data
-        const dataToInject: Record<string, any> = { ...baseData };
-
-        if (extractedData) {
-            if (extractedData.nombreCompleto) {
-                if ("Nombre" in dataToInject && "Apellido paterno" in dataToInject) {
-                    const parts = extractedData.nombreCompleto.split(" ");
-                    dataToInject["Nombre"] = parts[0] || "";
-                    dataToInject["Apellido paterno"] = parts[1] || "";
-                    if (parts.length > 2) {
-                        dataToInject["Apellido materno"] = parts.slice(2).join(" ");
-                    } else {
-                        dataToInject["Apellido materno"] = "";
-                    }
-                } else if ("Razón social" in dataToInject) {
-                    dataToInject["Razón social"] = extractedData.nombreCompleto;
-                } else if ("Razoón social" in dataToInject) {
-                    dataToInject["Razoón social"] = extractedData.nombreCompleto;
-                }
-                
-                // Override signature name
-                if ("Nombre y Firma del Cliente Contratante" in dataToInject) {
-                    dataToInject["Nombre y Firma del Cliente Contratante"] = `${extractedData.nombreCompleto} (Firma Digital Electrónica)`;
-                } else if ("Nombre y Firma del Representante Legal" in dataToInject) {
-                    dataToInject["Nombre y Firma del Representante Legal"] = `${extractedData.nombreCompleto} (Firma Digital Electrónica)`;
-                }
-            }
-            
-            if (extractedData.rfc) {
-                // Keep the exact key name it had
-                if ("RFC" in dataToInject) dataToInject["RFC"] = extractedData.rfc;
-            }
-            
-            if (extractedData.direccion) {
-                if ("Calle" in dataToInject) {
-                    dataToInject["Calle"] = extractedData.direccion;
-                } else if ("calle" in dataToInject) {
-                    dataToInject["calle"] = extractedData.direccion;
-                } else if ("Dirección" in dataToInject) {
-                    dataToInject["Dirección"] = extractedData.direccion;
-                }
-            }
-
-            if (extractedData.curp) {
-                if ("CURP" in dataToInject) {
-                    dataToInject["CURP"] = extractedData.curp;
-                }
-            }
-
-            if (extractedData.email) {
-                if ("mail" in dataToInject) {
-                    dataToInject["mail"] = extractedData.email;
-                }
-            }
-
-            if (extractedData.telefono) {
-                if ("Tel 1" in dataToInject) dataToInject["Tel 1"] = extractedData.telefono;
-                if ("Tel1" in dataToInject) dataToInject["Tel1"] = extractedData.telefono;
-                if ("Teléfono" in dataToInject) dataToInject["Teléfono"] = extractedData.telefono;
-                if ("Tel" in dataToInject) dataToInject["Tel"] = extractedData.telefono;
-            }
-
-            if (extractedData.calle) {
-                if ("Calle" in dataToInject) dataToInject["Calle"] = extractedData.calle;
-                if ("calle" in dataToInject) dataToInject["calle"] = extractedData.calle;
-            }
-            if (extractedData.numExt) {
-                if ("Núm ext" in dataToInject) dataToInject["Núm ext"] = extractedData.numExt;
-                if ("Núm Ext" in dataToInject) dataToInject["Núm Ext"] = extractedData.numExt;
-            }
-            if (extractedData.cp) {
-                if ("CP" in dataToInject) dataToInject["CP"] = extractedData.cp;
-            }
-            if (extractedData.colonia) {
-                if ("Col" in dataToInject) dataToInject["Col"] = extractedData.colonia;
-                if ("Colonia" in dataToInject) dataToInject["Colonia"] = extractedData.colonia;
-            }
-            if (extractedData.ciudad) {
-                if ("Ciudad población" in dataToInject) dataToInject["Ciudad población"] = extractedData.ciudad;
-                if ("Ciudad o población" in dataToInject) dataToInject["Ciudad o población"] = extractedData.ciudad;
-                if ("Ciudad" in dataToInject) dataToInject["Ciudad"] = extractedData.ciudad;
-            }
-            if (extractedData.estado) {
-                if ("Entidad federativa" in dataToInject) dataToInject["Entidad federativa"] = extractedData.estado;
-            }
-        }
-
-        // Read the PDF template
+        // Load PDF Document
         const pdfPath = path.join(process.cwd(), "src", "lib", "templates", "pdf", fileName);
         const pdfBytes = await fs.readFile(pdfPath);
-
-        // Load PDF Document
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const form = pdfDoc.getForm();
 
-        // Fill form fields
-        for (const [key, value] of Object.entries(dataToInject) as [string, any][]) {
+        // Helper strictly to set fields without failing if they don't exist
+        const setPdfField = (fieldName: string, value: string | boolean) => {
+            if (value === undefined || value === null || value === "") return;
             try {
-                const field = form.getTextField(key);
-                if (field) {
-                    field.setText(value as string);
+                if (typeof value === "boolean") {
+                    const checkField = form.getCheckBox(fieldName);
+                    if (checkField && value) checkField.check();
+                } else {
+                    const field = form.getTextField(fieldName);
+                    if (field) field.setText(value.toString());
                 }
             } catch (e) {
-                // Field might not exist or might not be a text field; ignore and continue
-                try {
-                    const checkField = form.getCheckBox(key);
-                    if (checkField && value === true) {
-                        checkField.check();
-                    }
-                } catch (innerError) {
-                    // Ignore
+                // Ignore missing fields inside specific PDF variations
+            }
+        };
+
+        const tryMultipleFields = (fieldNames: string[], value: string | boolean) => {
+            fieldNames.forEach(name => setPdfField(name, value));
+        };
+
+        if (extractedData) {
+            // Identidad
+            tryMultipleFields(["Nombre", "Razón social", "Razoón social"], extractedData.nombreCompleto);
+            if (extractedData.nombreCompleto) {
+                const parts = extractedData.nombreCompleto.split(" ");
+                tryMultipleFields(["Apellido paterno"], parts[1] || "");
+                tryMultipleFields(["Apellido materno"], parts.length > 2 ? parts.slice(2).join(" ") : "");
+            }
+
+            tryMultipleFields(["RFC"], extractedData.rfc);
+            tryMultipleFields(["CURP"], extractedData.curp);
+            tryMultipleFields(["mail", "Correo electrónico"], extractedData.email);
+            tryMultipleFields(["Tel 1", "Tel1", "Teléfono", "Tel"], extractedData.telefono);
+
+            // Domicilio Granular
+            tryMultipleFields(["Calle", "calle", "Dirección"], extractedData.calle || extractedData.direccion);
+            tryMultipleFields(["Núm ext", "Núm Ext"], extractedData.numExt);
+            tryMultipleFields(["Col", "Colonia"], extractedData.colonia);
+            tryMultipleFields(["CP"], extractedData.cp);
+            tryMultipleFields(["Ciudad población", "Ciudad o población", "Ciudad"], extractedData.ciudad);
+            tryMultipleFields(["Entidad federativa", "Entidad federativa domi"], extractedData.estado);
+
+            // Nuevos Campos (Nacionalidad, Fechas, País, PEP, Giro, Sellos)
+            if (extractedData.firmaElectronica) {
+                tryMultipleFields(["Firma electrónica", "Firma", "firma electronica"], extractedData.firmaElectronica);
+                // Also label signature lines with the name + digital seal metadata
+                tryMultipleFields(["Nombre y Firma del Cliente Contratante", "Nombre y Firma del Representante Legal"], `${extractedData.nombreCompleto} (Firma Digital SAT: ${extractedData.firmaElectronica.substring(0,18)}...)`);
+            } else {
+                 tryMultipleFields(["Nombre y Firma del Cliente Contratante", "Nombre y Firma del Representante Legal"], extractedData.nombreCompleto);
+            }
+            
+            if (extractedData.fechaNacimiento) {
+                const fParts = extractedData.fechaNacimiento.split("-");
+                if (fParts.length >= 3) {
+                    tryMultipleFields(["Día1", "Día1a"], fParts[2]);
+                    tryMultipleFields(["Mes1", "Mes1a"], fParts[1]);
+                    tryMultipleFields(["Año1", "año1", "Año1a"], fParts[0]);
                 }
             }
+            tryMultipleFields(["Nacionalidad"], extractedData.nacionalidad);
+            tryMultipleFields(["Entidad federativa nac", "Entidad"], extractedData.entidadNacimiento);
+            tryMultipleFields(["País nac", "País Nacimiento"], extractedData.paisNacimiento);
+            tryMultipleFields(["Giro", "Actividad"], extractedData.giro);
+            tryMultipleFields(["Monto mensual declarado", "Monto"], extractedData.montoMensual);
+            tryMultipleFields(["Último cargo PPE", "Último cargo PEP'S"], extractedData.pepCargo);
         }
-
         // Flatten form so it becomes uneditable and prints firmly
         form.flatten();
 
