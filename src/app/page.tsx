@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 export default function Registration() {
   const router = useRouter();
-  const { setPersonaType, personaType, setDocumentsUploaded, generateFolio, addUploadedFiles } =
+  const { setPersonaType, personaType, setDocumentsUploaded, generateFolio, addUploadedFiles, removeUploadedDoc } =
     useAppStore();
 
   const [uploadedDocsIds, setUploadedDocsIds] = useState<string[]>([]);
@@ -37,6 +37,12 @@ export default function Registration() {
         toast.success(`Documento${e.target.files.length > 1 ? 's' : ''} cargado${e.target.files.length > 1 ? 's' : ''} correctamente`);
       }
     }
+  };
+
+  const handleFileRemove = (activeDocId: string) => {
+      setUploadedDocsIds((prev) => prev.filter(id => id !== activeDocId));
+      removeUploadedDoc(activeDocId);
+      toast.info("Documento removido");
   };
 
   const handleFastTrackCedula = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,9 +279,22 @@ export default function Registration() {
                     <motion.div
                       layout
                       key={doc.id}
-                      className={`group flex ${viewMode === "grid" ? "flex-col items-center text-center justify-between p-6" : "flex-col sm:flex-row items-start sm:items-center p-4"} gap-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all shadow-sm`}
+                      className={`group flex relative ${viewMode === "grid" ? "flex-col items-center text-center justify-between p-6" : "flex-col sm:flex-row items-start sm:items-center p-4"} gap-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/30 transition-all shadow-sm`}
                     >
-                    <div className={`flex-1 space-y-1 w-full ${viewMode === "grid" ? "flex flex-col items-center" : "text-left"}`}>
+                    {isUploaded && (
+                        <button
+                           onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleFileRemove(doc.id);
+                           }}
+                           className="absolute top-2 left-2 z-10 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg p-1.5 transition-colors shadow-sm"
+                           title="Eliminar documento"
+                        >
+                            <span className="material-symbols-outlined text-[16px] block">delete</span>
+                        </button>
+                    )}
+                    <div className={`flex-1 space-y-1 w-full ${viewMode === "grid" ? "flex flex-col items-center" : "text-left pl-8"}`}>
                         <div className={`flex items-center gap-2 ${viewMode === "grid" ? "justify-center mb-2" : ""}`}>
                           {viewMode === "grid" && (
                               <div className={`p-2 rounded-lg ${isUploaded ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"}`}>

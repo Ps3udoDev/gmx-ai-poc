@@ -18,6 +18,12 @@ export interface ExtractedData {
     nombreCompleto: string;
     rfc: string;
     direccion: string;
+    calle: string;
+    numExt: string;
+    colonia: string;
+    cp: string;
+    ciudad: string;
+    estado: string;
     curp: string;
     email: string;
     telefono: string;
@@ -42,6 +48,8 @@ interface AppState {
     setPersonaType: (type: PersonaType) => void;
     setDocumentsUploaded: (count: number) => void;
     addUploadedFiles: (docId: string, files: File[]) => void;
+    removeUploadedFile: (docId: string, fileIndex: number) => void;
+    removeUploadedDoc: (docId: string) => void;
     clearUploadedFiles: () => void;
     generateFolio: () => void;
 
@@ -68,6 +76,12 @@ export const useAppStore = create<AppState>((set) => ({
         nombreCompleto: "",
         rfc: "",
         direccion: "",
+        calle: "",
+        numExt: "",
+        colonia: "",
+        cp: "",
+        ciudad: "",
+        estado: "",
         curp: "",
         email: "",
         telefono: "",
@@ -81,6 +95,28 @@ export const useAppStore = create<AppState>((set) => ({
         set((state) => ({ 
             uploadedFiles: { ...state.uploadedFiles, [docId]: files } 
         })),
+    removeUploadedFile: (docId, fileIndex) =>
+        set((state) => {
+            const currentFiles = state.uploadedFiles[docId] || [];
+            const newFiles = currentFiles.filter((_, idx) => idx !== fileIndex);
+            
+            // Clean up the key entirely if array goes empty
+            if (newFiles.length === 0) {
+                const newUploaded = { ...state.uploadedFiles };
+                delete newUploaded[docId];
+                return { uploadedFiles: newUploaded };
+            }
+            
+            return {
+                uploadedFiles: { ...state.uploadedFiles, [docId]: newFiles }
+            };
+        }),
+    removeUploadedDoc: (docId) =>
+        set((state) => {
+            const newUploaded = { ...state.uploadedFiles };
+            delete newUploaded[docId];
+            return { uploadedFiles: newUploaded };
+        }),
     clearUploadedFiles: () => set({ uploadedFiles: {} }),
     generateFolio: () => set({ folio: generateRandomFolio() }),
 
@@ -104,6 +140,12 @@ export const useAppStore = create<AppState>((set) => ({
                 nombreCompleto: "",
                 rfc: "",
                 direccion: "",
+                calle: "",
+                numExt: "",
+                colonia: "",
+                cp: "",
+                ciudad: "",
+                estado: "",
                 curp: "",
                 email: "",
                 telefono: "",

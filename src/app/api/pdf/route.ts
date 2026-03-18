@@ -80,6 +80,30 @@ export async function POST(request: Request) {
                 if ("Teléfono" in dataToInject) dataToInject["Teléfono"] = extractedData.telefono;
                 if ("Tel" in dataToInject) dataToInject["Tel"] = extractedData.telefono;
             }
+
+            if (extractedData.calle) {
+                if ("Calle" in dataToInject) dataToInject["Calle"] = extractedData.calle;
+                if ("calle" in dataToInject) dataToInject["calle"] = extractedData.calle;
+            }
+            if (extractedData.numExt) {
+                if ("Núm ext" in dataToInject) dataToInject["Núm ext"] = extractedData.numExt;
+                if ("Núm Ext" in dataToInject) dataToInject["Núm Ext"] = extractedData.numExt;
+            }
+            if (extractedData.cp) {
+                if ("CP" in dataToInject) dataToInject["CP"] = extractedData.cp;
+            }
+            if (extractedData.colonia) {
+                if ("Col" in dataToInject) dataToInject["Col"] = extractedData.colonia;
+                if ("Colonia" in dataToInject) dataToInject["Colonia"] = extractedData.colonia;
+            }
+            if (extractedData.ciudad) {
+                if ("Ciudad población" in dataToInject) dataToInject["Ciudad población"] = extractedData.ciudad;
+                if ("Ciudad o población" in dataToInject) dataToInject["Ciudad o población"] = extractedData.ciudad;
+                if ("Ciudad" in dataToInject) dataToInject["Ciudad"] = extractedData.ciudad;
+            }
+            if (extractedData.estado) {
+                if ("Entidad federativa" in dataToInject) dataToInject["Entidad federativa"] = extractedData.estado;
+            }
         }
 
         // Read the PDF template

@@ -157,9 +157,15 @@ export default function Validation() {
               email: currentMockData["mail"] || "",
               telefono: currentMockData["Tel 1"] || currentMockData["Tel1"] || "",
               direccion: currentMockData["Calle"] || "",
+              calle: currentMockData["Calle"] || "",
+              numExt: currentMockData["Núm ext"] || currentMockData["Núm Ext"] || "",
+              colonia: currentMockData["Col"] || "",
+              cp: currentMockData["CP"] || "",
+              ciudad: currentMockData["Ciudad población"] || currentMockData["Ciudad o población"] || currentMockData["Ciudad"] || "",
+              estado: currentMockData["Entidad federativa"] || "",
               confidence: 99.8,
             } : {
-              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", confidence: 99.8
+              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8
             };
             setExtractedData(fallbackData);
             setLocalData(fallbackData);
@@ -178,6 +184,12 @@ export default function Validation() {
         let nombreCompleto = "";
         let rfc = "";
         let direccion = "";
+        let calle = "";
+        let numExt = "";
+        let colonia = "";
+        let cp = "";
+        let ciudad = "";
+        let estado = "";
         let curp = "";
         let email = "";
         let telefono = "";
@@ -211,6 +223,12 @@ export default function Validation() {
                       
                       if (dp.domicilio) {
                           const d = dp.domicilio;
+                          calle = d.calleNumero || calle;
+                          colonia = d.coloniaPueblo || colonia;
+                          const cpMatch = d.ubicacion?.match(/\d{5}/);
+                          if (cpMatch) cp = cpMatch[0];
+                          ciudad = d.ubicacion || ciudad;
+                          
                           const addr = `${d.calleNumero || ''}, ${d.coloniaPueblo || ''}, ${d.ubicacion || ''}`.trim();
                           if (addr && !direccion) direccion = addr;
                       }
@@ -234,6 +252,13 @@ export default function Validation() {
                   }
                   
                   if (addr) {
+                      calle = addr.streetName || calle;
+                      numExt = addr.outdoorNumber || numExt;
+                      colonia = addr.neighborhood || colonia;
+                      cp = addr.zipCode || cp;
+                      ciudad = addr.municipality || ciudad;
+                      estado = addr.state || estado;
+                      
                       direccion = `${addr.streetName || ''} ${addr.outdoorNumber || ''}, ${addr.neighborhood || ''}, ${addr.state || ''}`.trim();
                   }
               }
@@ -245,6 +270,12 @@ export default function Validation() {
                       if (!nombreCompleto) nombreCompleto = cliente.razon_social || "";
                       if (cliente.domicilio_servicio) {
                           const d = cliente.domicilio_servicio;
+                          calle = d.calle || calle;
+                          colonia = d.colonia || colonia;
+                          ciudad = d.localidad || ciudad;
+                          estado = d.estado || estado;
+                          cp = d.codigo_postal || cp;
+                          
                           direccion = `${d.calle || ''}, ${d.colonia || ''}, ${d.localidad || ''}, ${d.estado || ''}`.trim();
                       }
                   }
@@ -264,6 +295,13 @@ export default function Validation() {
                   }
                   if (doc.addressAndContact?.fiscalAddress) {
                       const a = doc.addressAndContact.fiscalAddress;
+                      calle = a.street || calle;
+                      numExt = a.outdoorNumber || numExt;
+                      colonia = a.neighborhood || colonia;
+                      cp = a.zipCode || cp;
+                      ciudad = a.city || a.municipality || ciudad;
+                      estado = a.state || estado;
+                      
                       direccion = `${a.street || ''} ${a.outdoorNumber || ''}, ${a.neighborhood || ''}, ${a.city || ''}, ${a.state || ''}`.trim();
                   }
                   if (doc.addressAndContact?.telephones?.phone1) {
@@ -286,7 +324,7 @@ export default function Validation() {
            }
         });
 
-        const finalData = { nombreCompleto, rfc, curp, email, telefono, direccion, confidence };
+        const finalData = { nombreCompleto, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence };
         console.log("--- [FINAL EXTRACTED DATA PUSHED TO ZUSTAND] ---", finalData);
         
         setExtractedData(finalData);
