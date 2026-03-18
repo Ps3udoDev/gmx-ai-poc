@@ -44,6 +44,38 @@ export async function POST(request: Request) {
             fieldNames.forEach(name => setPdfField(name, value));
         };
 
+        const injectDateDigits = (dateStr: string, isBirthDate: boolean) => {
+             // dateStr format: YYYY-MM-DD
+             const parts = dateStr.split("-");
+             if (parts.length < 3) return;
+             
+             const year = parts[0];   
+             const month = parts[1];  
+             const day = parts[2];    
+             
+             const s = isBirthDate ? "a" : ""; // Add suffix for secondary dates
+             
+             tryMultipleFields([`Día1${s}`, `Día1c`], day[0] || "");
+             tryMultipleFields([`Día2${s}`, `Día2c`], day[1] || "");
+             tryMultipleFields([`Mes1${s}`, `Mes1c`], month[0] || "");
+             tryMultipleFields([`Mes2${s}`, `Mes2c`], month[1] || "");
+             tryMultipleFields([`Año1${s}`, `año1${s}`, `Año1c`], year[0] || "");
+             tryMultipleFields([`Año2${s}`, `año2${s}`, `Año2c`], year[1] || "");
+             tryMultipleFields([`Año3${s}`, `año3${s}`, `Año3c`], year[2] || "");
+             tryMultipleFields([`Año4${s}`, `año4${s}`, `Año4c`], year[3] || "");
+        };
+
+        // Static Hardcoded Agent Metadata 
+        tryMultipleFields(["Nombre del agente", "Agente"], "AGENTE DEMO GMX");
+        tryMultipleFields(["Nombre del ejecutivo", "Ejecutivo de la cuenta", "Ejecutivo"], "EJECUTIVO DEMO GMX");
+        
+        // Emulate today's precise Agent Date Document Time
+        const today = new Date();
+        const y = today.getFullYear().toString();
+        const m = (today.getMonth() + 1).toString().padStart(2, '0');
+        const d = today.getDate().toString().padStart(2, '0');
+        injectDateDigits(`${y}-${m}-${d}`, false);
+
         if (extractedData) {
             // Identidad
             tryMultipleFields(["Nombre", "Razón social", "Razoón social"], extractedData.nombreCompleto);
@@ -76,12 +108,7 @@ export async function POST(request: Request) {
             }
             
             if (extractedData.fechaNacimiento) {
-                const fParts = extractedData.fechaNacimiento.split("-");
-                if (fParts.length >= 3) {
-                    tryMultipleFields(["Día1", "Día1a"], fParts[2]);
-                    tryMultipleFields(["Mes1", "Mes1a"], fParts[1]);
-                    tryMultipleFields(["Año1", "año1", "Año1a"], fParts[0]);
-                }
+                injectDateDigits(extractedData.fechaNacimiento, true);
             }
             tryMultipleFields(["Nacionalidad"], extractedData.nacionalidad);
             tryMultipleFields(["Entidad federativa nac", "Entidad"], extractedData.entidadNacimiento);
