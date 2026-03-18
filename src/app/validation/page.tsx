@@ -47,8 +47,8 @@ export default function Validation() {
           const file = uploadedFiles["id_oficial"][0];
           const isPdf = file.type === "application/pdf";
           const endpoint = isPdf 
-            ? "https://gmx-ai-api.vercel.app/api/passport_pdf" 
-            : "https://gmx-ai-api.vercel.app/api/passport_img";
+            ? "/api/external/passport_pdf" 
+            : "/api/external/passport_img";
           
           const formData = new FormData();
           formData.append("file", file);
@@ -70,8 +70,8 @@ export default function Validation() {
           // Send to correct endpoint depending on if there are PDFs or only Images
           const hasPdf = csfFiles.some((f) => f.type === "application/pdf");
           const endpoint = hasPdf 
-            ? "https://gmx-ai-api.vercel.app/api/csf_pdf" 
-            : "https://gmx-ai-api.vercel.app/api/csf_img";
+            ? "/api/external/csf_pdf" 
+            : "/api/external/csf_img";
           
           const formData = new FormData();
           csfFiles.forEach((f) => formData.append("file", f));
