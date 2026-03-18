@@ -47,18 +47,37 @@ export default function Validation() {
         if (identityFiles.length > 0) {
             const file = identityFiles[0];
             const isPdf = file.type === "application/pdf";
-            const endpoint = isPdf ? "/api/external/ine_pdf" : "/api/external/passport_img";
-            const fieldKey = isPdf ? "file" : "image";
             
-            const formData = new FormData();
-            formData.append(fieldKey, file);
-            
-            promises.push(
-                fetch(endpoint, { method: "POST", body: formData })
-                  .then((res) => { if (!res.ok) throw new Error("API Identity falló"); return res.json(); })
-                  .then((data) => ({ source: "identity", data }))
-                  .catch((e) => ({ source: "identity", error: e }))
-            );
+            if (!isPdf) {
+                const formData = new FormData();
+                formData.append("image", file);
+                promises.push(
+                    fetch("/api/external/passport_img", { method: "POST", body: formData })
+                      .then((res) => { if (!res.ok) throw new Error("API Passport falló"); return res.json(); })
+                      .then((data) => ({ source: "identity", data }))
+                      .catch((e) => ({ source: "identity", error: e }))
+                );
+            } else {
+                const tryPdfIdentity = async () => {
+                    const fdPass = new FormData();
+                    fdPass.append("pdf", file);
+                    try {
+                        let res = await fetch("/api/external/passport_pdf", { method: "POST", body: fdPass });
+                        let data = await res.json();
+                        if (res.ok && !data.error) return { source: "identity", data: { response: data } }; // wrapped to match existing identity shape
+
+                        const fdIne = new FormData();
+                        fdIne.append("pdf", file); // Key 'pdf' as requested for new endpoints
+                        res = await fetch("/api/external/ine_pdf", { method: "POST", body: fdIne });
+                        data = await res.json();
+                        if (res.ok && !data.error) return { source: "identity", data }; 
+                        return { source: "identity", error: "Ambas APIs Identity fallaron" };
+                    } catch (e) {
+                        return { source: "identity", error: e };
+                    }
+                };
+                promises.push(tryPdfIdentity());
+            }
         }
 
         // 2. Comprobante de Domicilio (Servicios)
@@ -66,7 +85,7 @@ export default function Validation() {
         if (domFiles.length > 0) {
             const file = domFiles[0];
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("pdf", file);
             promises.push(
                 fetch("/api/external/servicio_pdf", { method: "POST", body: formData })
                   .then((res) => { if (!res.ok) throw new Error("API Servicio falló"); return res.json(); })
@@ -98,7 +117,7 @@ export default function Validation() {
         if (cedulaFiles.length > 0) {
             const file = cedulaFiles[0];
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("pdf", file);
             promises.push(
                 fetch("/api/external/cedula_pdf", { method: "POST", body: formData })
                   .then((res) => { if (!res.ok) throw new Error("API Cedula falló"); return res.json(); })
