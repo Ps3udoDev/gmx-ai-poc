@@ -10,10 +10,10 @@ export interface DocumentRequirement {
 export const requiredDocuments: Record<string, DocumentRequirement[]> = {
     fisica_nacional: [
         { id: "id_oficial", title: "Identificación Oficial", description: "INE, Pasaporte, Cédula Profesional, etc.", accept: "application/pdf" },
-        { id: "curp", title: "Constancia de CURP", accept: "image/*,application/pdf", optional: true },
+        { id: "curp", title: "Constancia de CURP", accept: "application/pdf" },
         { id: "rfc", title: "Cédula de Situación Fiscal (CSF)", multiple: true, accept: "image/*,application/pdf" },
         { id: "fiel", title: "Comprobante de FIEL", description: "Opcional si cuenta con ella", accept: "image/*,application/pdf", optional: true },
-        { id: "domicilio", title: "Comprobante de Domicilio", description: "Luz, Agua, Teléfono, no mayor a 3 meses", accept: "application/pdf", optional: true },
+        { id: "domicilio", title: "Comprobante de Domicilio", description: "Luz, Agua, Teléfono, no mayor a 3 meses", accept: "application/pdf" },
         { id: "cif", title: "Cédula de Identificación Fiscal", multiple: true, accept: "application/pdf", optional: true }
     ],
     fisica_extranjera: [

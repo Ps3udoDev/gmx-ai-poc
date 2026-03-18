@@ -94,8 +94,8 @@ export default function Validation() {
             );
         }
 
-        // 3. Situación Fiscal (CSF / CURP)
-        const csfFiles = [...(uploadedFiles["rfc"] || []), ...(uploadedFiles["cif"] || []), ...(uploadedFiles["curp"] || []), ...(uploadedFiles["curp_ext"] || [])];
+        // 3. Situación Fiscal (CSF)
+        const csfFiles = [...(uploadedFiles["rfc"] || []), ...(uploadedFiles["cif"] || [])];
         if (csfFiles.length > 0) {
             const hasPdf = csfFiles.some((f) => f.type === "application/pdf");
             const endpoint = hasPdf ? "/api/external/csf_pdf" : "/api/external/csf_img";
@@ -117,12 +117,26 @@ export default function Validation() {
         if (cedulaFiles.length > 0) {
             const file = cedulaFiles[0];
             const formData = new FormData();
-            formData.append("pdf", file);
+            formData.append("pdf", file); // Cedula accepts "pdf"
             promises.push(
                 fetch("/api/external/cedula_pdf", { method: "POST", body: formData })
                   .then((res) => { if (!res.ok) throw new Error("API Cedula falló"); return res.json(); })
                   .then((data) => ({ source: "cedula", data }))
                   .catch((e) => ({ source: "cedula", error: e }))
+            );
+        }
+
+        // 5. CURP Especializada
+        const curpFiles = [...(uploadedFiles["curp"] || []), ...(uploadedFiles["curp_ext"] || [])];
+        if (curpFiles.length > 0) {
+            const file = curpFiles[0];
+            const formData = new FormData();
+            formData.append("pdf", file); // CURP API expects "pdf"
+            promises.push(
+                fetch("/api/external/curp_pdf", { method: "POST", body: formData })
+                  .then((res) => { if (!res.ok) throw new Error("API CURP falló"); return res.json(); })
+                  .then((data) => ({ source: "curp", data }))
+                  .catch((e) => ({ source: "curp", error: e }))
             );
         }
 
@@ -243,7 +257,7 @@ export default function Validation() {
                       rfc = iden.rfc || rfc;
                       curp = iden.curp || curp;
                       email = iden.email || email;
-                      if (!nombreCompleto) {
+                      if (!nombreCompleto || nombreCompleto === "FALTA ASIGNAR") {
                           nombreCompleto = iden.fullNameOrBusinessName || 
                               `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
                       }
@@ -254,6 +268,19 @@ export default function Validation() {
                   }
                   if (doc.addressAndContact?.telephones?.phone1) {
                       telefono = doc.addressAndContact.telephones.phone1;
+                  }
+              }
+              else if (res.source === "curp" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
+                  const doc = apiBody.processedDocuments[0];
+                  console.log("CURP mapping doc:", doc);
+                  if (doc.taxpayerIdentity) {
+                      const iden = doc.taxpayerIdentity;
+                      curp = iden.curp || curp;
+                      // Nombre Completo si estamos en blanco
+                      if (!nombreCompleto || nombreCompleto.trim() === "FALTA ASIGNAR" || nombreCompleto.trim() === "") {
+                          const fallbackName = iden.fullName || `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
+                          nombreCompleto = fallbackName;
+                      }
                   }
               }
            }
