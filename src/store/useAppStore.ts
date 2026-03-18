@@ -20,6 +20,7 @@ export interface ExtractedData {
     direccion: string;
     curp: string;
     email: string;
+    telefono: string;
     confidence: number;
 }
 
@@ -69,6 +70,7 @@ export const useAppStore = create<AppState>((set) => ({
         direccion: "",
         curp: "",
         email: "",
+        telefono: "",
         confidence: 0,
     },
     uploadedFiles: {},
@@ -104,6 +106,7 @@ export const useAppStore = create<AppState>((set) => ({
                 direccion: "",
                 curp: "",
                 email: "",
+                telefono: "",
                 confidence: 0,
             },
         }),

@@ -42,58 +42,69 @@ export default function Validation() {
         const { uploadedFiles, personaType } = useAppStore.getState();
         const promises = [];
 
-        // 1. Passport (id_oficial)
-        if (uploadedFiles["id_oficial"] && uploadedFiles["id_oficial"].length > 0) {
-          const file = uploadedFiles["id_oficial"][0];
-          const isPdf = file.type === "application/pdf";
-          const endpoint = isPdf
-            ? "/api/external/passport_pdf"
-            : "/api/external/passport_img";
-
-          const formData = new FormData();
-          const fieldKey = isPdf ? "pdf" : "image";
-          formData.append(fieldKey, file);
-
-          promises.push(
-            fetch(endpoint, { method: "POST", body: formData })
-              .then((res) => {
-                if (!res.ok) throw new Error("API Passport falló");
-                return res.json();
-              })
-              .then((data) => ({ source: "passport", data }))
-              .catch((e) => ({ source: "passport", error: e }))
-          );
+        // 1. Identidad Oficial (INE / Pasaporte)
+        const identityFiles = [...(uploadedFiles["id_oficial"] || []), ...(uploadedFiles["id_representante"] || [])];
+        if (identityFiles.length > 0) {
+            const file = identityFiles[0];
+            const isPdf = file.type === "application/pdf";
+            const endpoint = isPdf ? "/api/external/ine_pdf" : "/api/external/passport_img";
+            const fieldKey = isPdf ? "file" : "image";
+            
+            const formData = new FormData();
+            formData.append(fieldKey, file);
+            
+            promises.push(
+                fetch(endpoint, { method: "POST", body: formData })
+                  .then((res) => { if (!res.ok) throw new Error("API Identity falló"); return res.json(); })
+                  .then((data) => ({ source: "identity", data }))
+                  .catch((e) => ({ source: "identity", error: e }))
+            );
         }
 
-        // 2. CSF (rfc / cif)
-        const csfFiles = [...(uploadedFiles["rfc"] || []), ...(uploadedFiles["cif"] || [])];
+        // 2. Comprobante de Domicilio (Servicios)
+        const domFiles = [...(uploadedFiles["domicilio"] || []), ...(uploadedFiles["domicilio_moral"] || []), ...(uploadedFiles["domicilio_ext"] || [])];
+        if (domFiles.length > 0) {
+            const file = domFiles[0];
+            const formData = new FormData();
+            formData.append("file", file);
+            promises.push(
+                fetch("/api/external/servicio_pdf", { method: "POST", body: formData })
+                  .then((res) => { if (!res.ok) throw new Error("API Servicio falló"); return res.json(); })
+                  .then((data) => ({ source: "servicio", data }))
+                  .catch((e) => ({ source: "servicio", error: e }))
+            );
+        }
+
+        // 3. Situación Fiscal (CSF / CURP)
+        const csfFiles = [...(uploadedFiles["rfc"] || []), ...(uploadedFiles["cif"] || []), ...(uploadedFiles["curp"] || []), ...(uploadedFiles["curp_ext"] || [])];
         if (csfFiles.length > 0) {
-          // Send to correct endpoint depending on if there are PDFs or only Images
-          const hasPdf = csfFiles.some((f) => f.type === "application/pdf");
-          const endpoint = hasPdf
-            ? "/api/external/csf_pdf"
-            : "/api/external/csf_img";
+            const hasPdf = csfFiles.some((f) => f.type === "application/pdf");
+            const endpoint = hasPdf ? "/api/external/csf_pdf" : "/api/external/csf_img";
+            let fieldKey = hasPdf ? (csfFiles.length === 1 ? "pdf" : "pdfs") : (csfFiles.length === 1 ? "image" : "images");
+            
+            const formData = new FormData();
+            csfFiles.forEach((f) => formData.append(fieldKey, f));
+            
+            promises.push(
+                fetch(endpoint, { method: "POST", body: formData })
+                  .then((res) => { if (!res.ok) throw new Error("API CSF falló"); return res.json(); })
+                  .then((data) => ({ source: "csf", data }))
+                  .catch((e) => ({ source: "csf", error: e }))
+            );
+        }
 
-          const formData = new FormData();
-
-          let fieldKey = "images"; // default multiple images
-          if (hasPdf) {
-            fieldKey = csfFiles.length === 1 ? "pdf" : "pdfs";
-          } else {
-            fieldKey = csfFiles.length === 1 ? "image" : "images";
-          }
-
-          csfFiles.forEach((f) => formData.append(fieldKey, f));
-
-          promises.push(
-            fetch(endpoint, { method: "POST", body: formData })
-              .then((res) => {
-                if (!res.ok) throw new Error("API CSF falló");
-                return res.json();
-              })
-              .then((data) => ({ source: "csf", data }))
-              .catch((e) => ({ source: "csf", error: e }))
-          );
+        // 4. Cédulas, Actas y Constancias Corporativas
+        const cedulaFiles = [...(uploadedFiles["rfc_moral"] || []), ...(uploadedFiles["tax_id"] || []), ...(uploadedFiles["acta"] || []), ...(uploadedFiles["poderes"] || []), ...(uploadedFiles["nombramiento"] || []), ...(uploadedFiles["existencia"] || [])];
+        if (cedulaFiles.length > 0) {
+            const file = cedulaFiles[0];
+            const formData = new FormData();
+            formData.append("file", file);
+            promises.push(
+                fetch("/api/external/cedula_pdf", { method: "POST", body: formData })
+                  .then((res) => { if (!res.ok) throw new Error("API Cedula falló"); return res.json(); })
+                  .then((data) => ({ source: "cedula", data }))
+                  .catch((e) => ({ source: "cedula", error: e }))
+            );
         }
 
         // Fallback to mock behavior if no real files were provided (e.g. Fast Track)
@@ -111,10 +122,11 @@ export default function Validation() {
               rfc: currentMockData["RFC"] || "",
               curp: currentMockData["CURP"] || "",
               email: currentMockData["mail"] || "",
+              telefono: currentMockData["Tel 1"] || currentMockData["Tel1"] || "",
               direccion: currentMockData["Calle"] || "",
               confidence: 99.8,
             } : {
-              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", direccion: "N/A", confidence: 99.8
+              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", confidence: 99.8
             };
             setExtractedData(fallbackData);
             setLocalData(fallbackData);
@@ -135,27 +147,47 @@ export default function Validation() {
         let direccion = "";
         let curp = "";
         let email = "";
+        let telefono = "";
         let confidence = 99.8;
 
         results.forEach((res: any) => {
            console.log(`--- [API RAW RESPONSE - ${res.source ? res.source.toUpperCase() : 'UNKNOWN'}] ---`, res.data);
            
            if (res.error) {
-              console.error("API Extraction Error", res.error);
+              console.error(`API Extraction Error (${res.source})`, res.error);
               confidence = Math.min(confidence, 45.0);
            } else {
               const apiBody = res.data.response ? res.data.response : res.data;
               
-              if (res.source === "passport" && apiBody.holder) {
-                  const holder = apiBody.holder;
-                  console.log("Passport mapping holder:", holder);
-                  nombreCompleto = `${holder.firstName || ''} ${holder.lastName || ''}`.trim();
-              } else if (res.source === "csf" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
+              if (res.source === "identity") {
+                  if (apiBody.holder) {
+                      const holder = apiBody.holder;
+                      console.log("Passport mapping holder:", holder);
+                      const newName = `${holder.firstName || ''} ${holder.lastName || ''}`.trim();
+                      if (newName) nombreCompleto = newName;
+                  } 
+                  else if (apiBody.processedDocuments && apiBody.processedDocuments.length > 0 && apiBody.processedDocuments[0].datosPersonales) {
+                      const dp = apiBody.processedDocuments[0].datosPersonales;
+                      console.log("INE mapping datosPersonales:", dp);
+                      const newName = `${dp.nombres || ''} ${dp.apellidoPaterno || ''} ${dp.apellidoMaterno || ''}`.trim();
+                      if (newName) nombreCompleto = newName;
+
+                      if (apiBody.processedDocuments[0].credencialesElectorales?.curp) {
+                          curp = apiBody.processedDocuments[0].credencialesElectorales.curp;
+                      }
+                      
+                      if (dp.domicilio) {
+                          const d = dp.domicilio;
+                          const addr = `${d.calleNumero || ''}, ${d.coloniaPueblo || ''}, ${d.ubicacion || ''}`.trim();
+                          if (addr && !direccion) direccion = addr;
+                      }
+                  }
+              } 
+              else if (res.source === "csf" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
                   const doc = apiBody.processedDocuments[0];
                   const iden = doc.taxpayerIdentity;
                   const addr = doc.registeredAddress;
                   console.log("CSF mapping identity:", iden);
-                  console.log("CSF mapping address:", addr);
                   
                   if (iden) {
                       rfc = iden.rfc || rfc;
@@ -172,10 +204,43 @@ export default function Validation() {
                       direccion = `${addr.streetName || ''} ${addr.outdoorNumber || ''}, ${addr.neighborhood || ''}, ${addr.state || ''}`.trim();
                   }
               }
+              else if (res.source === "servicio" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
+                  const cliente = apiBody.processedDocuments[0].cliente;
+                  console.log("Servicio mapping cliente:", cliente);
+                  if (cliente) {
+                      if (!rfc) rfc = cliente.rfc || "";
+                      if (!nombreCompleto) nombreCompleto = cliente.razon_social || "";
+                      if (cliente.domicilio_servicio) {
+                          const d = cliente.domicilio_servicio;
+                          direccion = `${d.calle || ''}, ${d.colonia || ''}, ${d.localidad || ''}, ${d.estado || ''}`.trim();
+                      }
+                  }
+              }
+              else if (res.source === "cedula" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
+                  const doc = apiBody.processedDocuments[0];
+                  console.log("Cedula mapping doc:", doc);
+                  if (doc.taxpayerIdentity) {
+                      const iden = doc.taxpayerIdentity;
+                      rfc = iden.rfc || rfc;
+                      curp = iden.curp || curp;
+                      email = iden.email || email;
+                      if (!nombreCompleto) {
+                          nombreCompleto = iden.fullNameOrBusinessName || 
+                              `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
+                      }
+                  }
+                  if (doc.addressAndContact?.fiscalAddress) {
+                      const a = doc.addressAndContact.fiscalAddress;
+                      direccion = `${a.street || ''} ${a.outdoorNumber || ''}, ${a.neighborhood || ''}, ${a.city || ''}, ${a.state || ''}`.trim();
+                  }
+                  if (doc.addressAndContact?.telephones?.phone1) {
+                      telefono = doc.addressAndContact.telephones.phone1;
+                  }
+              }
            }
         });
 
-        const finalData = { nombreCompleto, rfc, curp, email, direccion, confidence };
+        const finalData = { nombreCompleto, rfc, curp, email, telefono, direccion, confidence };
         console.log("--- [FINAL EXTRACTED DATA PUSHED TO ZUSTAND] ---", finalData);
         
         setExtractedData(finalData);
@@ -435,6 +500,23 @@ export default function Validation() {
                     value={localData.direccion}
                     onChange={(e) =>
                       setLocalData({ ...localData, direccion: e.target.value })
+                    }
+                    className={`${!needsReview && !isExtracting
+                      ? "bg-emerald-500/5 border-emerald-500/30"
+                      : ""
+                      }`}
+                  />
+                </div>
+
+                <div className="relative">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block">
+                    Teléfono
+                  </label>
+                  <Input
+                    readOnly={!needsReview}
+                    value={localData.telefono || ""}
+                    onChange={(e) =>
+                      setLocalData({ ...localData, telefono: e.target.value })
                     }
                     className={`${!needsReview && !isExtracting
                       ? "bg-emerald-500/5 border-emerald-500/30"

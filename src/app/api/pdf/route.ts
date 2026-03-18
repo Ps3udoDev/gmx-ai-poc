@@ -73,6 +73,13 @@ export async function POST(request: Request) {
                     dataToInject["mail"] = extractedData.email;
                 }
             }
+
+            if (extractedData.telefono) {
+                if ("Tel 1" in dataToInject) dataToInject["Tel 1"] = extractedData.telefono;
+                if ("Tel1" in dataToInject) dataToInject["Tel1"] = extractedData.telefono;
+                if ("Teléfono" in dataToInject) dataToInject["Teléfono"] = extractedData.telefono;
+                if ("Tel" in dataToInject) dataToInject["Tel"] = extractedData.telefono;
+            }
         }
 
         // Read the PDF template
