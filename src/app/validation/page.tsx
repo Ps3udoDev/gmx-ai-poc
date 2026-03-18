@@ -109,10 +109,12 @@ export default function Validation() {
                 ? `${currentMockData["Nombre"]} ${currentMockData["Apellido paterno"]}`
                 : currentMockData["Razón social"] || "",
               rfc: currentMockData["RFC"] || "",
+              curp: currentMockData["CURP"] || "",
+              email: currentMockData["mail"] || "",
               direccion: currentMockData["Calle"] || "",
               confidence: 99.8,
             } : {
-              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", direccion: "N/A", confidence: 99.8
+              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", direccion: "N/A", confidence: 99.8
             };
             setExtractedData(fallbackData);
             setLocalData(fallbackData);
@@ -131,6 +133,8 @@ export default function Validation() {
         let nombreCompleto = "";
         let rfc = "";
         let direccion = "";
+        let curp = "";
+        let email = "";
         let confidence = 99.8;
 
         results.forEach((res: any) => {
@@ -145,6 +149,8 @@ export default function Validation() {
               const iden = doc.taxpayerIdentity;
               const addr = doc.registeredAddress;
               rfc = iden.rfc;
+              curp = iden.curp || "";
+              
               if (!nombreCompleto) {
                   nombreCompleto = iden.fullName || iden.businessName || "";
               }
@@ -154,7 +160,7 @@ export default function Validation() {
            }
         });
 
-        const finalData = { nombreCompleto, rfc, direccion, confidence };
+        const finalData = { nombreCompleto, rfc, curp, email, direccion, confidence };
         setExtractedData(finalData);
         setLocalData(finalData);
 
@@ -376,9 +382,26 @@ export default function Validation() {
                   </label>
                   <Input
                     readOnly={!needsReview}
-                    value={localData.rfc}
+                    value={localData.rfc || ""}
                     onChange={(e) =>
                       setLocalData({ ...localData, rfc: e.target.value })
+                    }
+                    className={`${!needsReview && !isExtracting
+                      ? "bg-emerald-500/5 border-emerald-500/30"
+                      : ""
+                      }`}
+                  />
+                </div>
+
+                <div className="relative">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block">
+                    CURP
+                  </label>
+                  <Input
+                    readOnly={!needsReview}
+                    value={localData.curp || ""}
+                    onChange={(e) =>
+                      setLocalData({ ...localData, curp: e.target.value })
                     }
                     className={`${!needsReview && !isExtracting
                       ? "bg-emerald-500/5 border-emerald-500/30"

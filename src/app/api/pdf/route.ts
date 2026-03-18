@@ -61,6 +61,18 @@ export async function POST(request: Request) {
                     dataToInject["Dirección"] = extractedData.direccion;
                 }
             }
+
+            if (extractedData.curp) {
+                if ("CURP" in dataToInject) {
+                    dataToInject["CURP"] = extractedData.curp;
+                }
+            }
+
+            if (extractedData.email) {
+                if ("mail" in dataToInject) {
+                    dataToInject["mail"] = extractedData.email;
+                }
+            }
         }
 
         // Read the PDF template
