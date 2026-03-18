@@ -152,6 +152,9 @@ export default function Validation() {
               nombreCompleto: currentMockData["Nombre"] && currentMockData["Apellido paterno"]
                 ? `${currentMockData["Nombre"]} ${currentMockData["Apellido paterno"]}`
                 : currentMockData["Razón social"] || "",
+              nombre: currentMockData["Nombre"] || "",
+              apellidoPaterno: currentMockData["Apellido paterno"] || "",
+              apellidoMaterno: currentMockData["Apellido materno"] || "",
               rfc: currentMockData["RFC"] || "",
               curp: currentMockData["CURP"] || "",
               email: currentMockData["mail"] || "",
