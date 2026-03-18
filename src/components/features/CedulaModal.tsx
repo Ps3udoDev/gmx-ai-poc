@@ -22,7 +22,7 @@ export default function CedulaModal({ isOpen, onClose }: CedulaModalProps) {
         fetch("/api/pdf", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ personaType }),
+            body: JSON.stringify({ personaType, extractedData }),
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Failed to load PDF");
