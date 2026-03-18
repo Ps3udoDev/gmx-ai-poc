@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAppStore, PersonaType } from "@/store/useAppStore";
 import { requiredDocuments, DocumentRequirement } from "@/lib/documentRequirements";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,17 @@ import { motion, AnimatePresence } from "motion/react";
 
 export default function Registration() {
   const router = useRouter();
-  const { setPersonaType, personaType, setDocumentsUploaded, generateFolio, addUploadedFiles, removeUploadedDoc } =
+  const { setPersonaType, personaType, setDocumentsUploaded, generateFolio, addUploadedFiles, removeUploadedDoc, resetFlow } =
     useAppStore();
 
   const [uploadedDocsIds, setUploadedDocsIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [fastTrackCedulaLoaded, setFastTrackCedulaLoaded] = useState(false);
+
+  useEffect(() => {
+    // Limpieza agresiva de stores requerida al volver al inicio
+    resetFlow();
+  }, [resetFlow]);
 
   const currentDocs: DocumentRequirement[] = useMemo(() => {
     return personaType ? requiredDocuments[personaType] || [] : [];

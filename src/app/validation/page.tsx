@@ -174,7 +174,7 @@ export default function Validation() {
               isPep: null,
               pepCargo: "",
             } : {
-              nombreCompleto: "FALTA ASIGNAR", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8, fechaNacimiento: "", nacionalidad: "", paisNacimiento: "", entidadNacimiento: "", giro: "", montoMensual: "", firmaElectronica: "", isPep: null, pepCargo: ""
+              nombreCompleto: "FALTA ASIGNAR", nombre: "", apellidoPaterno: "", apellidoMaterno: "", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8, fechaNacimiento: "", nacionalidad: "", paisNacimiento: "", entidadNacimiento: "", giro: "", montoMensual: "", firmaElectronica: "", isPep: null, pepCargo: ""
             };
             setExtractedData(fallbackData);
             setLocalData(fallbackData);
@@ -191,6 +191,9 @@ export default function Validation() {
         setValidationProgress(100);
 
         let nombreCompleto = "";
+        let nombre = "";
+        let apellidoPaterno = "";
+        let apellidoMaterno = "";
         let rfc = "";
         let direccion = "";
         let calle = "";
@@ -229,6 +232,8 @@ export default function Validation() {
                       console.log("Passport mapping holder:", holder);
                       const newName = `${holder.firstName || ''} ${holder.lastName || ''}`.trim();
                       if (newName) nombreCompleto = newName;
+                      nombre = holder.firstName || nombre;
+                      apellidoPaterno = holder.lastName || apellidoPaterno;
                       fechaNacimiento = holder.dateOfBirth || fechaNacimiento;
                       nacionalidad = holder.nationality || nacionalidad;
                       paisNacimiento = holder.issuingCountry || paisNacimiento;
@@ -239,6 +244,9 @@ export default function Validation() {
                       console.log("INE mapping datosPersonales:", dp);
                       const newName = `${dp.nombres || ''} ${dp.apellidoPaterno || ''} ${dp.apellidoMaterno || ''}`.trim();
                       if (newName) nombreCompleto = newName;
+                      nombre = dp.nombres || nombre;
+                      apellidoPaterno = dp.apellidoPaterno || apellidoPaterno;
+                      apellidoMaterno = dp.apellidoMaterno || apellidoMaterno;
 
                       if (apiBody.processedDocuments[0].credencialesElectorales?.curp) {
                           curp = apiBody.processedDocuments[0].credencialesElectorales.curp;
@@ -274,6 +282,9 @@ export default function Validation() {
                               : iden.fullName || iden.businessName || "";
                           nombreCompleto = fallbackName;
                       }
+                      nombre = iden.firstName || nombre;
+                      apellidoPaterno = iden.firstSurname || apellidoPaterno;
+                      apellidoMaterno = iden.secondSurname || apellidoMaterno;
                   }
                   
                   if (addr) {
@@ -324,6 +335,9 @@ export default function Validation() {
                           nombreCompleto = iden.fullNameOrBusinessName || 
                               `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
                       }
+                      nombre = iden.firstName || nombre;
+                      apellidoPaterno = iden.paternalLastName || apellidoPaterno;
+                      apellidoMaterno = iden.maternalLastName || apellidoMaterno;
                   }
                   if (doc.addressAndContact?.fiscalAddress) {
                       const a = doc.addressAndContact.fiscalAddress;
@@ -351,12 +365,15 @@ export default function Validation() {
                           const fallbackName = iden.fullName || `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
                           nombreCompleto = fallbackName;
                       }
+                      nombre = iden.firstName || nombre;
+                      apellidoPaterno = iden.paternalLastName || apellidoPaterno;
+                      apellidoMaterno = iden.maternalLastName || apellidoMaterno;
                   }
               }
            }
         });
 
-        const finalData = { nombreCompleto, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence, fechaNacimiento, nacionalidad, paisNacimiento, entidadNacimiento, giro, montoMensual, firmaElectronica, isPep, pepCargo };
+        const finalData = { nombreCompleto, nombre, apellidoPaterno, apellidoMaterno, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence, fechaNacimiento, nacionalidad, paisNacimiento, entidadNacimiento, giro, montoMensual, firmaElectronica, isPep, pepCargo };
         console.log("--- [FINAL EXTRACTED DATA PUSHED TO ZUSTAND] ---", finalData);
         
         setExtractedData(finalData);

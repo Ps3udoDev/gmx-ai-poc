@@ -16,6 +16,9 @@ export type ValidationStatus =
 
 export interface ExtractedData {
     nombreCompleto: string;
+    nombre: string;
+    apellidoPaterno: string;
+    apellidoMaterno: string;
     rfc: string;
     direccion: string;
     calle: string;
@@ -83,6 +86,9 @@ export const useAppStore = create<AppState>((set) => ({
     extractionProgress: 0,
     extractedData: {
         nombreCompleto: "",
+        nombre: "",
+        apellidoPaterno: "",
+        apellidoMaterno: "",
         rfc: "",
         direccion: "",
         calle: "",
@@ -156,6 +162,9 @@ export const useAppStore = create<AppState>((set) => ({
             uploadedFiles: {},
             extractedData: {
                 nombreCompleto: "",
+                nombre: "",
+                apellidoPaterno: "",
+                apellidoMaterno: "",
                 rfc: "",
                 direccion: "",
                 calle: "",

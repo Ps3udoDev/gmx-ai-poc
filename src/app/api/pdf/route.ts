@@ -77,13 +77,11 @@ export async function POST(request: Request) {
         injectDateDigits(`${y}-${m}-${d}`, false);
 
         if (extractedData) {
-            // Identidad
-            tryMultipleFields(["Nombre", "Razón social", "Razoón social"], extractedData.nombreCompleto);
-            if (extractedData.nombreCompleto) {
-                const parts = extractedData.nombreCompleto.split(" ");
-                tryMultipleFields(["Apellido paterno"], parts[1] || "");
-                tryMultipleFields(["Apellido materno"], parts.length > 2 ? parts.slice(2).join(" ") : "");
-            }
+            // Identidad (Personas Físicas vs Morales)
+            tryMultipleFields(["Razón social", "Razoón social"], extractedData.nombreCompleto);
+            tryMultipleFields(["Nombre"], extractedData.nombre || (extractedData.nombreCompleto ? extractedData.nombreCompleto.split(" ")[0] : ""));
+            tryMultipleFields(["Apellido paterno"], extractedData.apellidoPaterno || (extractedData.nombreCompleto ? extractedData.nombreCompleto.split(" ")[1] || "" : ""));
+            tryMultipleFields(["Apellido materno"], extractedData.apellidoMaterno || "");
 
             tryMultipleFields(["RFC"], extractedData.rfc);
             tryMultipleFields(["CURP"], extractedData.curp);
