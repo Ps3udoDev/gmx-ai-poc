@@ -46,19 +46,19 @@ export default function Validation() {
         if (uploadedFiles["id_oficial"] && uploadedFiles["id_oficial"].length > 0) {
           const file = uploadedFiles["id_oficial"][0];
           const isPdf = file.type === "application/pdf";
-          const endpoint = isPdf 
-            ? "/api/external/passport_pdf" 
+          const endpoint = isPdf
+            ? "/api/external/passport_pdf"
             : "/api/external/passport_img";
-          
+
           const formData = new FormData();
           const fieldKey = isPdf ? "pdf" : "image";
           formData.append(fieldKey, file);
-          
+
           promises.push(
             fetch(endpoint, { method: "POST", body: formData })
               .then((res) => {
-                  if (!res.ok) throw new Error("API Passport falló");
-                  return res.json();
+                if (!res.ok) throw new Error("API Passport falló");
+                return res.json();
               })
               .then((data) => ({ source: "passport", data }))
               .catch((e) => ({ source: "passport", error: e }))
@@ -70,26 +70,26 @@ export default function Validation() {
         if (csfFiles.length > 0) {
           // Send to correct endpoint depending on if there are PDFs or only Images
           const hasPdf = csfFiles.some((f) => f.type === "application/pdf");
-          const endpoint = hasPdf 
-            ? "/api/external/csf_pdf" 
+          const endpoint = hasPdf
+            ? "/api/external/csf_pdf"
             : "/api/external/csf_img";
-          
+
           const formData = new FormData();
-          
+
           let fieldKey = "images"; // default multiple images
           if (hasPdf) {
-              fieldKey = csfFiles.length === 1 ? "pdf" : "pdfs";
+            fieldKey = csfFiles.length === 1 ? "pdf" : "pdfs";
           } else {
-              fieldKey = csfFiles.length === 1 ? "image" : "images";
+            fieldKey = csfFiles.length === 1 ? "image" : "images";
           }
-          
+
           csfFiles.forEach((f) => formData.append(fieldKey, f));
-          
+
           promises.push(
             fetch(endpoint, { method: "POST", body: formData })
               .then((res) => {
-                  if (!res.ok) throw new Error("API CSF falló");
-                  return res.json();
+                if (!res.ok) throw new Error("API CSF falló");
+                return res.json();
               })
               .then((data) => ({ source: "csf", data }))
               .catch((e) => ({ source: "csf", error: e }))
@@ -138,29 +138,46 @@ export default function Validation() {
         let confidence = 99.8;
 
         results.forEach((res: any) => {
+           console.log(`--- [API RAW RESPONSE - ${res.source ? res.source.toUpperCase() : 'UNKNOWN'}] ---`, res.data);
+           
            if (res.error) {
               console.error("API Extraction Error", res.error);
               confidence = Math.min(confidence, 45.0);
-           } else if (res.source === "passport" && res.data.response) {
-              const holder = res.data.response.holder;
-              nombreCompleto = `${holder.firstName} ${holder.lastName}`;
-           } else if (res.source === "csf" && res.data.response) {
-              const doc = res.data.response.processedDocuments[0];
-              const iden = doc.taxpayerIdentity;
-              const addr = doc.registeredAddress;
-              rfc = iden.rfc;
-              curp = iden.curp || "";
+           } else {
+              const apiBody = res.data.response ? res.data.response : res.data;
               
-              if (!nombreCompleto) {
-                  nombreCompleto = iden.fullName || iden.businessName || "";
-              }
-              if (addr) {
-                  direccion = `${addr.streetName || ''} ${addr.outdoorNumber || ''}, ${addr.neighborhood || ''}, ${addr.state || ''}`.trim();
+              if (res.source === "passport" && apiBody.holder) {
+                  const holder = apiBody.holder;
+                  console.log("Passport mapping holder:", holder);
+                  nombreCompleto = `${holder.firstName || ''} ${holder.lastName || ''}`.trim();
+              } else if (res.source === "csf" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
+                  const doc = apiBody.processedDocuments[0];
+                  const iden = doc.taxpayerIdentity;
+                  const addr = doc.registeredAddress;
+                  console.log("CSF mapping identity:", iden);
+                  console.log("CSF mapping address:", addr);
+                  
+                  if (iden) {
+                      rfc = iden.rfc || rfc;
+                      curp = iden.curp || curp;
+                      if (!nombreCompleto || nombreCompleto.trim() === "") {
+                          const fallbackName = iden.firstName && iden.firstSurname 
+                              ? `${iden.firstName} ${iden.firstSurname} ${iden.secondSurname || ''}`.trim()
+                              : iden.fullName || iden.businessName || "";
+                          nombreCompleto = fallbackName;
+                      }
+                  }
+                  
+                  if (addr) {
+                      direccion = `${addr.streetName || ''} ${addr.outdoorNumber || ''}, ${addr.neighborhood || ''}, ${addr.state || ''}`.trim();
+                  }
               }
            }
         });
 
         const finalData = { nombreCompleto, rfc, curp, email, direccion, confidence };
+        console.log("--- [FINAL EXTRACTED DATA PUSHED TO ZUSTAND] ---", finalData);
+        
         setExtractedData(finalData);
         setLocalData(finalData);
 
@@ -171,7 +188,6 @@ export default function Validation() {
             setValidationStatus("manual_review");
             toast.error("Confianza baja o error en API. Se requiere revisión manual");
         }
-
       } catch (error) {
         if (!isSubscribed) return;
         clearInterval(interval);
