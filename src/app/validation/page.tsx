@@ -51,7 +51,8 @@ export default function Validation() {
             : "/api/external/passport_img";
           
           const formData = new FormData();
-          formData.append("file", file);
+          const fieldKey = isPdf ? "pdf" : "image";
+          formData.append(fieldKey, file);
           
           promises.push(
             fetch(endpoint, { method: "POST", body: formData })
@@ -74,7 +75,15 @@ export default function Validation() {
             : "/api/external/csf_img";
           
           const formData = new FormData();
-          csfFiles.forEach((f) => formData.append("file", f));
+          
+          let fieldKey = "images"; // default multiple images
+          if (hasPdf) {
+              fieldKey = csfFiles.length === 1 ? "pdf" : "pdfs";
+          } else {
+              fieldKey = csfFiles.length === 1 ? "image" : "images";
+          }
+          
+          csfFiles.forEach((f) => formData.append(fieldKey, f));
           
           promises.push(
             fetch(endpoint, { method: "POST", body: formData })
