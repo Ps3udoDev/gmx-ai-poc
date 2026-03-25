@@ -42,6 +42,8 @@ export default function Registration() {
         toast.success(`Documento${e.target.files.length > 1 ? 's' : ''} cargado${e.target.files.length > 1 ? 's' : ''} correctamente`);
       }
     }
+    // Liberar input para permitir resubir el mismo archivo si se elimina
+    e.target.value = '';
   };
 
   const handleFileRemove = (activeDocId: string) => {
@@ -370,6 +372,7 @@ export default function Registration() {
           </Button>
           <Button
             onClick={handleContinue}
+            disabled={!personaType || (uploadedRequired < requiredOnlyDocs.length && !fastTrackCedulaLoaded)}
             className="px-10 py-6 rounded-xl font-bold shadow-lg shadow-primary/20 flex items-center gap-2"
           >
             Continuar
