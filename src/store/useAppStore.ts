@@ -45,6 +45,11 @@ export interface ExtractedData {
     repLegalCargo: string;
     repLegalDomicilio: string;
     confidence: number;
+    art492Checks: {
+        idVigente: boolean | null;
+        domicilioReciente: boolean | null;
+        nombresCoinciden: boolean | null;
+    };
 }
 
 interface AppState {
@@ -120,6 +125,11 @@ export const useAppStore = create<AppState>((set) => ({
         repLegalCargo: "",
         repLegalDomicilio: "",
         confidence: 0,
+        art492Checks: {
+            idVigente: null,
+            domicilioReciente: null,
+            nombresCoinciden: null,
+        },
     },
     uploadedFiles: {},
 
@@ -201,6 +211,11 @@ export const useAppStore = create<AppState>((set) => ({
                 repLegalCargo: "",
                 repLegalDomicilio: "",
                 confidence: 0,
+                art492Checks: {
+                    idVigente: null,
+                    domicilioReciente: null,
+                    nombresCoinciden: null,
+                },
             },
         }),
 }));

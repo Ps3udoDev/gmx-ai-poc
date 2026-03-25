@@ -181,8 +181,9 @@ export default function Validation() {
               repLegalRFC: "",
               repLegalCargo: "",
               repLegalDomicilio: "",
+              art492Checks: { idVigente: null, domicilioReciente: null, nombresCoinciden: null }
             } : {
-              nombreCompleto: "FALTA ASIGNAR", nombre: "", apellidoPaterno: "", apellidoMaterno: "", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8, fechaNacimiento: "", nacionalidad: "", paisNacimiento: "", entidadNacimiento: "", giro: "", montoMensual: "", firmaElectronica: "", isPep: null, pepCargo: "", folioMercantil: "", repLegalNombre: "", repLegalRFC: "", repLegalCargo: "", repLegalDomicilio: ""
+              nombreCompleto: "FALTA ASIGNAR", nombre: "", apellidoPaterno: "", apellidoMaterno: "", rfc: "N/A", curp: "N/A", email: "", telefono: "N/A", direccion: "N/A", calle: "", numExt: "", colonia: "", cp: "", ciudad: "", estado: "", confidence: 99.8, fechaNacimiento: "", nacionalidad: "", paisNacimiento: "", entidadNacimiento: "", giro: "", montoMensual: "", firmaElectronica: "", isPep: null, pepCargo: "", folioMercantil: "", repLegalNombre: "", repLegalRFC: "", repLegalCargo: "", repLegalDomicilio: "", art492Checks: { idVigente: null, domicilioReciente: null, nombresCoinciden: null }
             };
             setExtractedData(fallbackData);
             setLocalData(fallbackData);
@@ -229,6 +230,13 @@ export default function Validation() {
         let repLegalRFC = "";
         let repLegalCargo = "";
         let repLegalDomicilio = "";
+        
+        // Art 492 Validations State Tracker
+        let art_idVigente: boolean | null = null;
+        let art_domicilioReciente: boolean | null = null;
+        let art_nombresCoinciden: boolean | null = null;
+        let art_nombreID = "";
+        let art_nombreFiscal = "";
 
         results.forEach((res: any) => {
            console.log(`--- [API RAW RESPONSE - ${res.source ? res.source.toUpperCase() : 'UNKNOWN'}] ---`, res.data);
@@ -245,18 +253,26 @@ export default function Validation() {
                       console.log("Passport mapping holder:", holder);
                       const newName = `${holder.firstName || ''} ${holder.lastName || ''}`.trim();
                       if (newName) nombreCompleto = newName;
+                      art_nombreID = newName;
                       nombre = holder.firstName || nombre;
                       apellidoPaterno = holder.lastName || apellidoPaterno;
                       fechaNacimiento = holder.dateOfBirth || fechaNacimiento;
                       nacionalidad = holder.nationality || nacionalidad;
                       paisNacimiento = holder.issuingCountry || paisNacimiento;
                       entidadNacimiento = holder.placeOfBirth || entidadNacimiento;
+                      
+                      // Art 492 - ID Expiration
+                      if (apiBody.validity?.expiryDate) {
+                          const expDate = new Date(apiBody.validity.expiryDate);
+                          art_idVigente = expDate >= new Date();
+                      }
                   } 
                   else if (apiBody.processedDocuments && apiBody.processedDocuments.length > 0 && apiBody.processedDocuments[0].datosPersonales) {
                       const dp = apiBody.processedDocuments[0].datosPersonales;
                       console.log("INE mapping datosPersonales:", dp);
                       const newName = `${dp.nombres || ''} ${dp.apellidoPaterno || ''} ${dp.apellidoMaterno || ''}`.trim();
                       if (newName) nombreCompleto = newName;
+                      art_nombreID = newName;
                       nombre = dp.nombres || nombre;
                       apellidoPaterno = dp.apellidoPaterno || apellidoPaterno;
                       apellidoMaterno = dp.apellidoMaterno || apellidoMaterno;
@@ -264,6 +280,14 @@ export default function Validation() {
                       if (apiBody.processedDocuments[0].credencialesElectorales?.curp) {
                           curp = apiBody.processedDocuments[0].credencialesElectorales.curp;
                       }
+                      
+                      // Art 492 - ID Expiration (by Year)
+                      if (apiBody.processedDocuments[0].credencialesElectorales?.vigencia) {
+                         const currentYear = new Date().getFullYear();
+                         const vigYear = parseInt(apiBody.processedDocuments[0].credencialesElectorales.vigencia, 10);
+                         if (!isNaN(vigYear)) art_idVigente = vigYear >= currentYear;
+                      }
+                      
                       fechaNacimiento = dp.fechaNacimiento || fechaNacimiento;
                       paisNacimiento = apiBody.processedDocuments[0].pais || paisNacimiento;
                       
@@ -295,6 +319,7 @@ export default function Validation() {
                               : iden.fullName || iden.businessName || "";
                           nombreCompleto = fallbackName;
                       }
+                      art_nombreFiscal = nombreCompleto;
                       nombre = iden.firstName || nombre;
                       apellidoPaterno = iden.firstSurname || apellidoPaterno;
                       apellidoMaterno = iden.secondSurname || apellidoMaterno;
@@ -316,6 +341,13 @@ export default function Validation() {
                   }
                   if (doc.security?.digitalSeal) {
                       firmaElectronica = doc.security.digitalSeal;
+                  }
+                  
+                  // Art 492 - Antigüedad
+                  if (doc.documentInfo?.emissionDate) {
+                      const d = new Date(doc.documentInfo.emissionDate);
+                      const maxOld = new Date(); maxOld.setMonth(maxOld.getMonth() - 3);
+                      art_domicilioReciente = d >= maxOld;
                   }
               }
               else if (res.source === "servicio" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
@@ -350,6 +382,7 @@ export default function Validation() {
                           nombreCompleto = iden.fullNameOrBusinessName || 
                               `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
                       }
+                      art_nombreFiscal = nombreCompleto;
                       nombre = iden.firstName || nombre;
                       apellidoPaterno = iden.paternalLastName || apellidoPaterno;
                       apellidoMaterno = iden.maternalLastName || apellidoMaterno;
@@ -365,6 +398,13 @@ export default function Validation() {
                       repLegalRFC = rep.rfc || repLegalRFC;
                       repLegalCargo = rep.position || repLegalCargo;
                       repLegalDomicilio = rep.address || repLegalDomicilio;
+                  }
+                  
+                  // Art 492 - Antigüedad
+                  if (doc.documentInfo?.emissionDate?.iso) {
+                      const d = new Date(doc.documentInfo.emissionDate.iso);
+                      const maxOld = new Date(); maxOld.setMonth(maxOld.getMonth() - 3);
+                      art_domicilioReciente = d >= maxOld;
                   }
               }
                   if (doc.addressAndContact?.fiscalAddress) {
@@ -393,6 +433,7 @@ export default function Validation() {
                           const fallbackName = iden.fullName || `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
                           nombreCompleto = fallbackName;
                       }
+                      art_nombreFiscal = nombreCompleto;
                       nombre = iden.firstName || nombre;
                       apellidoPaterno = iden.paternalLastName || apellidoPaterno;
                       apellidoMaterno = iden.maternalLastName || apellidoMaterno;
@@ -401,7 +442,16 @@ export default function Validation() {
            }
         });
 
-        const finalData = { nombreCompleto, nombre, apellidoPaterno, apellidoMaterno, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence, fechaNacimiento, nacionalidad, paisNacimiento, entidadNacimiento, giro, montoMensual, firmaElectronica, isPep, pepCargo, folioMercantil, repLegalNombre, repLegalRFC, repLegalCargo, repLegalDomicilio };
+        // Art 492 - Name Coincidence Analyzer
+        if (art_nombreID && art_nombreFiscal) {
+            const sanitize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, '');
+            const sID = sanitize(art_nombreID);
+            const sFiscal = sanitize(art_nombreFiscal);
+            art_nombresCoinciden = (sID === sFiscal) || (sFiscal.includes(sID));
+        }
+
+        const art492Checks = { idVigente: art_idVigente, domicilioReciente: art_domicilioReciente, nombresCoinciden: art_nombresCoinciden };
+        const finalData = { nombreCompleto, nombre, apellidoPaterno, apellidoMaterno, rfc, curp, email, telefono, direccion, calle, numExt, colonia, cp, ciudad, estado, confidence, fechaNacimiento, nacionalidad, paisNacimiento, entidadNacimiento, giro, montoMensual, firmaElectronica, isPep, pepCargo, folioMercantil, repLegalNombre, repLegalRFC, repLegalCargo, repLegalDomicilio, art492Checks };
         console.log("--- [FINAL EXTRACTED DATA PUSHED TO ZUSTAND] ---", finalData);
         
         setExtractedData(finalData);
@@ -599,6 +649,44 @@ export default function Validation() {
                   </div>
                 </div>
               </div>
+
+              {(!isExtracting && localData.art492Checks) && (
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 mb-4">
+                    <span className="material-symbols-outlined text-amber-500">policy</span>
+                    Reglas de Negocio (Art. 492)
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className={`material-symbols-outlined ${localData.art492Checks.idVigente ? "text-emerald-500" : localData.art492Checks.idVigente === false ? "text-rose-500" : "text-slate-400"}`}>
+                        {localData.art492Checks.idVigente ? "check_circle" : localData.art492Checks.idVigente === false ? "cancel" : "help"}
+                      </span>
+                      <div>
+                        <p className={`text-sm font-semibold ${localData.art492Checks.idVigente ? "text-emerald-700 dark:text-emerald-400" : localData.art492Checks.idVigente === false ? "text-rose-700 dark:text-rose-400" : "text-slate-500"}`}>Identificación Oficial Vigente</p>
+                        <p className="text-xs text-slate-500 line-clamp-1">Validación de caducidad en pasaporte o credencial.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className={`material-symbols-outlined ${localData.art492Checks.domicilioReciente ? "text-emerald-500" : localData.art492Checks.domicilioReciente === false ? "text-rose-500" : "text-slate-400"}`}>
+                        {localData.art492Checks.domicilioReciente ? "check_circle" : localData.art492Checks.domicilioReciente === false ? "cancel" : "help"}
+                      </span>
+                      <div>
+                        <p className={`text-sm font-semibold ${localData.art492Checks.domicilioReciente ? "text-emerald-700 dark:text-emerald-400" : localData.art492Checks.domicilioReciente === false ? "text-rose-700 dark:text-rose-400" : "text-slate-500"}`}>Comprobante de Domicilio &lt; 3 meses</p>
+                        <p className="text-xs text-slate-500 line-clamp-1">Antigüedad comprobado directo de fecha de emisión fiscal.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className={`material-symbols-outlined ${localData.art492Checks.nombresCoinciden ? "text-emerald-500" : localData.art492Checks.nombresCoinciden === false ? "text-rose-500" : "text-slate-400"}`}>
+                        {localData.art492Checks.nombresCoinciden ? "check_circle" : localData.art492Checks.nombresCoinciden === false ? "cancel" : "help"}
+                      </span>
+                      <div>
+                        <p className={`text-sm font-semibold ${localData.art492Checks.nombresCoinciden ? "text-emerald-700 dark:text-emerald-400" : localData.art492Checks.nombresCoinciden === false ? "text-rose-700 dark:text-rose-400" : "text-slate-500"}`}>Coincidencia de Titularidad</p>
+                        <p className="text-xs text-slate-500 line-clamp-1">El nombre fiscal cuadra matemáticamente con Identidad Oficial.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5">
                 <div className="relative group">
