@@ -313,13 +313,15 @@ export default function Validation() {
                   if (iden) {
                       rfc = iden.rfc || rfc;
                       curp = iden.curp || curp;
+                      const fallbackName = iden.firstName && iden.firstSurname 
+                          ? `${iden.firstName} ${iden.firstSurname} ${iden.secondSurname || ''}`.trim()
+                          : iden.fullName || iden.businessName || "";
+                          
+                      art_nombreFiscal = fallbackName;
+                      
                       if (!nombreCompleto || nombreCompleto.trim() === "") {
-                          const fallbackName = iden.firstName && iden.firstSurname 
-                              ? `${iden.firstName} ${iden.firstSurname} ${iden.secondSurname || ''}`.trim()
-                              : iden.fullName || iden.businessName || "";
                           nombreCompleto = fallbackName;
                       }
-                      art_nombreFiscal = nombreCompleto;
                       nombre = iden.firstName || nombre;
                       apellidoPaterno = iden.firstSurname || apellidoPaterno;
                       apellidoMaterno = iden.secondSurname || apellidoMaterno;
@@ -428,12 +430,14 @@ export default function Validation() {
                   if (doc.taxpayerIdentity) {
                       const iden = doc.taxpayerIdentity;
                       curp = iden.curp || curp;
+                      const fallbackName = iden.fullName || `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
+                      // Asignar crudo forzoso para validacion cruzada (Anti-Fraud)
+                      art_nombreFiscal = fallbackName;
+                      
                       // Nombre Completo si estamos en blanco
                       if (!nombreCompleto || nombreCompleto.trim() === "FALTA ASIGNAR" || nombreCompleto.trim() === "") {
-                          const fallbackName = iden.fullName || `${iden.firstName || ''} ${iden.paternalLastName || ''} ${iden.maternalLastName || ''}`.trim();
                           nombreCompleto = fallbackName;
                       }
-                      art_nombreFiscal = nombreCompleto;
                       nombre = iden.firstName || nombre;
                       apellidoPaterno = iden.paternalLastName || apellidoPaterno;
                       apellidoMaterno = iden.maternalLastName || apellidoMaterno;
