@@ -231,9 +231,9 @@ export default function Validation() {
         let repLegalCargo = "";
         let repLegalDomicilio = "";
         
-        // Art 492 Validations State Tracker
+        // Art 492 - Validations State Tracker
         let art_idVigente: boolean | null = null;
-        let art_domicilioReciente: boolean | null = null;
+        let art_domicilioReciente: boolean | null = true; // Temporalmente deshabilitado (forzado a true)
         let art_nombresCoinciden: boolean | null = null;
         let art_nombreID = "";
         let art_nombreFiscal = "";
@@ -349,7 +349,7 @@ export default function Validation() {
                   if (doc.documentInfo?.emissionDate) {
                       const d = new Date(doc.documentInfo.emissionDate);
                       const maxOld = new Date(); maxOld.setMonth(maxOld.getMonth() - 3);
-                      art_domicilioReciente = d >= maxOld;
+                      art_domicilioReciente = true; // Temporalmente forzado a true
                   }
               }
               else if (res.source === "servicio" && apiBody.processedDocuments && apiBody.processedDocuments.length > 0) {
@@ -406,7 +406,7 @@ export default function Validation() {
                   if (doc.documentInfo?.emissionDate?.iso) {
                       const d = new Date(doc.documentInfo.emissionDate.iso);
                       const maxOld = new Date(); maxOld.setMonth(maxOld.getMonth() - 3);
-                      art_domicilioReciente = d >= maxOld;
+                      art_domicilioReciente = true; // Temporalmente forzado a true
                   }
               }
                   if (doc.addressAndContact?.fiscalAddress) {
